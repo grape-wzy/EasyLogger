@@ -29,7 +29,7 @@
 #ifndef __ELOG_H__
 #define __ELOG_H__
 
-#include <elog_cfg_wl55.h>
+#include <elog_cfg.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -38,232 +38,350 @@
 extern "C" {
 #endif
 
-/* output log's level */
-#define ELOG_LVL_ASSERT                      0
-#define ELOG_LVL_ERROR                       1
-#define ELOG_LVL_WARN                        2
-#define ELOG_LVL_INFO                        3
-#define ELOG_LVL_DEBUG                       4
-#define ELOG_LVL_VERBOSE                     5
+/* output log's level.
+ *
+ * ELOG_LVL_ASSERT is the highest level.
+ *
+ */
+#define ELOG_LVL_ASSERT                                   0
+#define ELOG_LVL_ERROR                                    1
+#define ELOG_LVL_WARN                                     2
+#define ELOG_LVL_INFO                                     3
+#define ELOG_LVL_DEBUG                                    4
+#define ELOG_LVL_VERBOSE                                  5
 
 /* the output silent level and all level for filter setting */
-#define ELOG_FILTER_LVL_SILENT               ELOG_LVL_ASSERT
-#define ELOG_FILTER_LVL_ALL                  ELOG_LVL_VERBOSE
-
-/* output log's level total number */
-#define ELOG_LVL_TOTAL_NUM                   6
+#define ELOG_FILTER_LVL_SILENT                            ELOG_LVL_ASSERT
+#define ELOG_FILTER_LVL_ALL                               ELOG_LVL_VERBOSE
 
 /* EasyLogger software version number */
-#define ELOG_SW_VERSION                      "2.2.99"
+#define ELOG_SW_VERSION                                   "2.2.99"
 
-/* EasyLogger assert for developer. */
-#ifdef ELOG_ASSERT_ENABLE
-    #define ELOG_ASSERT(EXPR)                                                 \
-    if (!(EXPR))                                                              \
-    {                                                                         \
-        if (elog_assert_hook == NULL) {                                       \
-            elog_a("elog", "(%s) has assert failed at %s:%ld.", #EXPR, __FUNCTION__, __LINE__); \
-            while (1);                                                        \
-        } else {                                                              \
-            elog_assert_hook(#EXPR, __FUNCTION__, __LINE__);                  \
-        }                                                                     \
-    }
+#if (defined(ELOG_FMT_DIR_ENABLE) && (ELOG_FMT_DIR_ENABLE != 0)) || (defined(ELOG_FMT_FILE_ENABLE) && (ELOG_FMT_FILE_ENABLE != 0))
+#define ELOG_FILE_DIR                                     __FILE__
 #else
-    #define ELOG_ASSERT(EXPR)                    ((void)0);
+#define ELOG_FILE_DIR                                     "\0"
 #endif
 
-#ifndef ELOG_OUTPUT_ENABLE
-    #define elog_raw(...)
-    #define elog_assert(tag, ...)
-    #define elog_error(tag, ...)
-    #define elog_warn(tag, ...)
-    #define elog_info(tag, ...)
-    #define elog_debug(tag, ...)
-    #define elog_verbose(tag, ...)
+#if defined(ELOG_FMT_FUNC_ENABLE) && (ELOG_FMT_FUNC_ENABLE != 0)
+#define ELOG_FUNC_NAME                                    __FUNCTION__
+#else
+#define ELOG_FUNC_NAME                                    "\0"
+#endif
+
+#if !defined(ELOG_OUTPUT_ENABLE) || (ELOG_OUTPUT_ENABLE == 0)
+#define elog_hex(in_isr, appender, tag, width, buf, size)
+#define elog_raw(in_isr, appender, ...)
+#define elog_assert(in_isr, appender, tag, ...)
+#define elog_error(in_isr, appender, tag, ...)
+#define elog_warn(in_isr, appender, tag, ...)
+#define elog_info(in_isr, appender, tag, ...)
+#define elog_debug(in_isr, appender, tag, ...)
+#define elog_verbose(in_isr, appender, tag, ...)
 #else /* ELOG_OUTPUT_ENABLE */
-    #define elog_raw(...)  elog_raw_output(__VA_ARGS__)
-    #if ELOG_OUTPUT_LVL >= ELOG_LVL_ASSERT
-        #define elog_assert(tag, ...) \
-                elog_output(ELOG_LVL_ASSERT, tag, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-    #else
-        #define elog_assert(tag, ...)
-    #endif /* ELOG_OUTPUT_LVL >= ELOG_LVL_ASSERT */
 
-    #if ELOG_OUTPUT_LVL >= ELOG_LVL_ERROR
-        #define elog_error(tag, ...) \
-                elog_output(ELOG_LVL_ERROR, tag, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-    #else
-        #define elog_error(tag, ...)
-    #endif /* ELOG_OUTPUT_LVL >= ELOG_LVL_ERROR */
+#if ELOG_OUTPUT_LVL >= ELOG_LVL_ASSERT
+#define elog_assert(in_isr, appender, tag, ...) \
+    elog_output(in_isr, appender, ELOG_LVL_ASSERT, tag, ELOG_FILE_DIR, ELOG_FUNC_NAME, __LINE__, __VA_ARGS__)
+#else
+#define elog_assert(in_isr, appender, tag, ...)
+#endif /* ELOG_OUTPUT_LVL >= ELOG_LVL_ASSERT */
 
-    #if ELOG_OUTPUT_LVL >= ELOG_LVL_WARN
-        #define elog_warn(tag, ...) \
-                elog_output(ELOG_LVL_WARN, tag, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-    #else
-        #define elog_warn(tag, ...)
-    #endif /* ELOG_OUTPUT_LVL >= ELOG_LVL_WARN */
+#if ELOG_OUTPUT_LVL >= ELOG_LVL_ERROR
+#define elog_error(in_isr, appender, tag, ...) \
+    elog_output(in_isr, appender, ELOG_LVL_ERROR, tag, ELOG_FILE_DIR, ELOG_FUNC_NAME, __LINE__, __VA_ARGS__)
+#else
+#define elog_error(in_isr, appender, tag, ...)
+#endif /* ELOG_OUTPUT_LVL >= ELOG_LVL_ERROR */
 
-    #if ELOG_OUTPUT_LVL >= ELOG_LVL_INFO
-        #define elog_info(tag, ...) \
-                elog_output(ELOG_LVL_INFO, tag, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-    #else
-        #define elog_info(tag, ...)
-    #endif /* ELOG_OUTPUT_LVL >= ELOG_LVL_INFO */
+#if ELOG_OUTPUT_LVL >= ELOG_LVL_WARN
+#define elog_warn(in_isr, appender, tag, ...) \
+    elog_output(in_isr, appender, ELOG_LVL_WARN, tag, ELOG_FILE_DIR, ELOG_FUNC_NAME, __LINE__, __VA_ARGS__)
+#else
+#define elog_warn(in_isr, appender, tag, ...)
+#endif /* ELOG_OUTPUT_LVL >= ELOG_LVL_WARN */
 
-    #if ELOG_OUTPUT_LVL >= ELOG_LVL_DEBUG
-        #define elog_debug(tag, ...) \
-                elog_output(ELOG_LVL_DEBUG, tag, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-    #else
-        #define elog_debug(tag, ...)
-    #endif /* ELOG_OUTPUT_LVL >= ELOG_LVL_DEBUG */
+#if ELOG_OUTPUT_LVL >= ELOG_LVL_INFO
+#define elog_info(in_isr, appender, tag, ...) \
+    elog_output(in_isr, appender, ELOG_LVL_INFO, tag, ELOG_FILE_DIR, ELOG_FUNC_NAME, __LINE__, __VA_ARGS__)
+#else
+#define elog_info(in_isr, appender, tag, ...)
+#endif /* ELOG_OUTPUT_LVL >= ELOG_LVL_INFO */
 
-    #if ELOG_OUTPUT_LVL == ELOG_LVL_VERBOSE
-        #define elog_verbose(tag, ...) \
-                elog_output(ELOG_LVL_VERBOSE, tag, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)
-    #else
-        #define elog_verbose(tag, ...)
-    #endif /* ELOG_OUTPUT_LVL == ELOG_LVL_VERBOSE */
+#if ELOG_OUTPUT_LVL >= ELOG_LVL_DEBUG
+#define elog_debug(in_isr, appender, tag, ...) \
+    elog_output(in_isr, appender, ELOG_LVL_DEBUG, tag, ELOG_FILE_DIR, ELOG_FUNC_NAME, __LINE__, __VA_ARGS__)
+#else
+#define elog_debug(in_isr, appender, tag, ...)
+#endif /* ELOG_OUTPUT_LVL >= ELOG_LVL_DEBUG */
+
+#if ELOG_OUTPUT_LVL == ELOG_LVL_VERBOSE
+#define elog_verbose(in_isr, appender, tag, ...) \
+    elog_output(in_isr, appender, ELOG_LVL_VERBOSE, tag, ELOG_FILE_DIR, ELOG_FUNC_NAME, __LINE__, __VA_ARGS__)
+#else
+#define elog_verbose(in_isr, appender, tag, ...)
+#endif /* ELOG_OUTPUT_LVL == ELOG_LVL_VERBOSE */
+
+#if ELOG_OUTPUT_LVL >= ELOG_LVL_DEBUG
+#define elog_hex(in_isr, appender, tag, width, buf, size) \
+    elog_hexdump(in_isr, appender, tag, width, buf, size)
+#else
+#define elog_hex(in_isr, appender, tag, width, buf, size)
+#endif /* ELOG_OUTPUT_LVL >= ELOG_LVL_DEBUG */
+
+#define elog_raw(in_isr, appender, ...) \
+    elog_raw_output(in_isr, appender, __VA_ARGS__)
 #endif /* ELOG_OUTPUT_ENABLE */
 
-/* all formats index */
-typedef enum {
-    ELOG_FMT_LVL    = 1 << 0, /**< level */
-    ELOG_FMT_TAG    = 1 << 1, /**< tag */
-    ELOG_FMT_TIME   = 1 << 2, /**< current time */
-    ELOG_FMT_P_INFO = 1 << 3, /**< process info */
-    ELOG_FMT_T_INFO = 1 << 4, /**< thread info */
-    ELOG_FMT_DIR    = 1 << 5, /**< file directory and name */
-    ELOG_FMT_FUNC   = 1 << 6, /**< function name */
-    ELOG_FMT_LINE   = 1 << 7, /**< line number */
-} ElogFmtIndex;
-
-/* macro definition for all formats */
-#define ELOG_FMT_ALL    (ELOG_FMT_LVL|ELOG_FMT_TAG|ELOG_FMT_TIME|ELOG_FMT_P_INFO|ELOG_FMT_T_INFO| \
-    ELOG_FMT_DIR|ELOG_FMT_FUNC|ELOG_FMT_LINE)
-
-/* output log's tag filter */
-typedef struct {
-    uint8_t level;
-    char tag[ELOG_FILTER_TAG_MAX_LEN + 1];
-    bool tag_use_flag; /**< false : tag is no used   true: tag is used */
-} ElogTagLvlFilter, *ElogTagLvlFilter_t;
-
-/* output log's filter */
-typedef struct {
-    uint8_t level;
-    char tag[ELOG_FILTER_TAG_MAX_LEN + 1];
-    char keyword[ELOG_FILTER_KW_MAX_LEN + 1];
-    ElogTagLvlFilter tag_lvl[ELOG_FILTER_TAG_LVL_MAX_NUM];
-} ElogFilter, *ElogFilter_t;
-
-/* easy logger */
-typedef struct {
-    ElogFilter filter;
-    size_t enabled_fmt_set[ELOG_LVL_TOTAL_NUM];
-    bool init_ok;
-    bool output_enabled;
-    bool output_lock_enabled;
-    bool output_is_locked_before_enable;
-    bool output_is_locked_before_disable;
-
-#ifdef ELOG_COLOR_ENABLE
-    bool text_color_enabled;
+#if !defined(LOG_TAG)
+#define LOG_TAG                                           "NO_TAG"
 #endif
-
-}EasyLogger, *EasyLogger_t;
-
-/* EasyLogger error code */
-typedef enum {
-    ELOG_NO_ERR,
-} ElogErrCode;
-
-/* elog.c */
-ElogErrCode elog_init(void);
-void elog_deinit(void);
-void elog_start(void);
-void elog_stop(void);
-void elog_set_output_enabled(bool enabled);
-bool elog_get_output_enabled(void);
-void elog_set_text_color_enabled(bool enabled);
-bool elog_get_text_color_enabled(void);
-void elog_set_fmt(uint8_t level, size_t set);
-void elog_set_filter(uint8_t level, const char *tag, const char *keyword);
-void elog_set_filter_lvl(uint8_t level);
-void elog_set_filter_tag(const char *tag);
-void elog_set_filter_kw(const char *keyword);
-void elog_set_filter_tag_lvl(const char *tag, uint8_t level);
-uint8_t elog_get_filter_tag_lvl(const char *tag);
-void elog_raw_output(const char *format, ...);
-void elog_output(uint8_t level, const char *tag, const char *file, const char *func,
-        const long line, const char *format, ...);
-void elog_output_lock_enabled(bool enabled);
-extern void (*elog_assert_hook)(const char* expr, const char* func, size_t line);
-void elog_assert_set_hook(void (*hook)(const char* expr, const char* func, size_t line));
-int8_t elog_find_lvl(const char *log);
-const char *elog_find_tag(const char *log, uint8_t lvl, size_t *tag_len);
-void elog_hexdump(const char *name, uint8_t width, const void *buf, uint16_t size);
-
-#define elog_a(tag, ...)     elog_assert(tag, __VA_ARGS__)
-#define elog_e(tag, ...)     elog_error(tag, __VA_ARGS__)
-#define elog_w(tag, ...)     elog_warn(tag, __VA_ARGS__)
-#define elog_i(tag, ...)     elog_info(tag, __VA_ARGS__)
-#define elog_d(tag, ...)     elog_debug(tag, __VA_ARGS__)
-#define elog_v(tag, ...)     elog_verbose(tag, __VA_ARGS__)
+#if !defined(LOG_LVL)
+#define LOG_LVL                                           ELOG_LVL_VERBOSE
+#endif
+#if !defined(LOG_IN_ISR)
+#define LOG_IN_ISR                                        false
+#endif
+#if !defined(LOG_APPENDER)
+#define LOG_APPENDER                                      ELOG_APD_CONSOLE
+#endif
 
 /**
  * log API short definition
  * NOTE: The `LOG_TAG` and `LOG_LVL` must defined before including the <elog.h> when you want to use log_x API.
  */
-#if !defined(LOG_TAG)
-    #define LOG_TAG          "NO_TAG"
-#endif
-#if !defined(LOG_LVL)
-    #define LOG_LVL          ELOG_LVL_VERBOSE
-#endif
-#if LOG_LVL >= ELOG_LVL_ASSERT
-    #define log_a(...)       elog_a(LOG_TAG, __VA_ARGS__)
-#else
-    #define log_a(...)       ((void)0);
-#endif
 #if LOG_LVL >= ELOG_LVL_ERROR
-    #define log_e(...)       elog_e(LOG_TAG, __VA_ARGS__)
-#else
-    #define log_e(...)       ((void)0);
+#define LOG_E(...)                                        elog_error(LOG_IN_ISR, LOG_APPENDER, LOG_TAG, __VA_ARGS__)
 #endif
 #if LOG_LVL >= ELOG_LVL_WARN
-    #define log_w(...)       elog_w(LOG_TAG, __VA_ARGS__)
-#else
-    #define log_w(...)       ((void)0);
+#define LOG_W(...)                                        elog_warn(LOG_IN_ISR, LOG_APPENDER, LOG_TAG, __VA_ARGS__)
 #endif
 #if LOG_LVL >= ELOG_LVL_INFO
-    #define log_i(...)       elog_i(LOG_TAG, __VA_ARGS__)
-#else
-    #define log_i(...)       ((void)0);
+#define LOG_I(...)                                        elog_info(LOG_IN_ISR, LOG_APPENDER, LOG_TAG, __VA_ARGS__)
 #endif
 #if LOG_LVL >= ELOG_LVL_DEBUG
-    #define log_d(...)       elog_d(LOG_TAG, __VA_ARGS__)
-#else
-    #define log_d(...)       ((void)0);
+#define LOG_D(...)                                        elog_debug(LOG_IN_ISR, LOG_APPENDER, LOG_TAG, __VA_ARGS__)
 #endif
 #if LOG_LVL >= ELOG_LVL_VERBOSE
-    #define log_v(...)       elog_v(LOG_TAG, __VA_ARGS__)
+#define LOG_V(...)                                        elog_verbose(LOG_IN_ISR, LOG_APPENDER, LOG_TAG, __VA_ARGS__)
+#endif
+
+#define LOG_RAW(...)                                      elog_raw(LOG_IN_ISR, LOG_APPENDER, __VA_ARGS__)
+#define LOG_HEX(tag, width, buf, size)                    elog_hex(LOG_IN_ISR, LOG_APPENDER, tag, width, buf, size)
+
+/* EasyLogger assert for developer. */
+#if defined(ELOG_ASSERT_ENABLE) && (ELOG_ASSERT_ENABLE != 0)
+#define ELOG_ASSERT(EXPR)                                           \
+    if (!(EXPR)) {                                                  \
+        if (elog_assert_hook == NULL) {                             \
+            elog_assert(false, ELOG_APD_CONSOLE, "elog.assert",     \
+                        "(%s) has assert failed at %s:%ld.", #EXPR, \
+                        ELOG_FUNC_NAME, __LINE__);                  \
+            while (1) {}                                            \
+        } else {                                                    \
+            elog_assert_hook(#EXPR, ELOG_FUNC_NAME, __LINE__);      \
+        }                                                           \
+    }
 #else
-    #define log_v(...)       ((void)0);
+#define ELOG_ASSERT(EXPR)
 #endif
 
-/* assert API short definition */
-#if !defined(assert)
-    #define assert           ELOG_ASSERT
-#endif
+/* all formats index */
+typedef enum {
+    ELOG_FMT_LVL    = (1 << 0),    /**< level */
+    ELOG_FMT_TAG    = (1 << 1),    /**< tag */
+    ELOG_FMT_TIME   = (1 << 2),   /**< current time */
+    ELOG_FMT_P_INFO = (1 << 3), /**< process info */
+    ELOG_FMT_T_INFO = (1 << 4), /**< thread info */
+    ELOG_FMT_NAME   = (1 << 5),   /**< file name */
+    ELOG_FMT_DIR    = (1 << 6),    /**< file directory and name */
+    ELOG_FMT_FUNC   = (1 << 7),   /**< function name */
+} ElogFmtIndex;
 
-/* elog_buf.c */
-void elog_buf_enabled(bool enabled);
-void elog_flush(void);
+/* EasyLogger error code */
+typedef enum {
+    ELOG_NO_ERR = 0,     /**< no error */
+    ELOG_EFAILED,        /**< failure code */
+    ELOG_EDENY,          /**< Operation be denied */
+    ELOG_ENO_SPACE,      /**< no space in tag filter array */
+    ELOG_ELOCK_FAILED,   /**< lock the output failed */
+    ELOG_EUNLOCK_FAILED, /**< unlock the output failed */
+} ElogErrCode;
 
-/* elog_async.c */
-void elog_async_enabled(bool enabled);
-size_t elog_async_get_log(char *log, size_t size);
-size_t elog_async_get_line_log(char *log, size_t size);
+/* function in elog.c */
+#if defined(ELOG_OUTPUT_ENABLE) && (ELOG_OUTPUT_ENABLE != 0)
+/**
+ * @brief set output enable or disable
+ *
+ * @param enabled true: enable false: disable
+ */
+void elog_set_output_enabled(bool enabled);
+
+/**
+ * @brief get output is enable or disable
+ *
+ * @return enable or disable
+ */
+bool elog_get_output_enabled(void);
+
+/**
+ * @brief enable or disable logger output lock
+ *
+ * @note disable this lock is not recommended except you want output system exception log
+ *
+ * @param enabled true: enable  false: disable.
+ * @param in_isr called environment. true: called in interrupt, false: called normally.
+ * @param appender the appender need to be lock.
+ */
+void elog_output_lock_enabled(bool enabled, bool in_isr, uint32_t appender);
+
+/**
+ * @brief lock output, just used by elog
+ *
+ * @param in_isr called environment. true: called in interrupt, false: called normally.
+ * @param appender the appender need to be lock.
+ *
+ * @return ELOG_NO_ERR or ELOG_ELOCK_FAILED
+ */
+ElogErrCode elog_output_lock(bool in_isr, uint32_t appender);
+
+/**
+ * @brief unlock output, just used by elog
+ *
+ * @param in_isr called environment. true: called in interrupt, false: called normally.
+ * @param appender the appender need to be unlock.
+ *
+ * @return ELOG_NO_ERR or ELOG_ELOCK_FAILED
+ */
+ElogErrCode elog_output_unlock(bool in_isr, uint32_t appender);
+
+/**
+ * @brief set log output format for specified log level.
+ *
+ * @param level specified log level
+ * @param format the format you want to set
+ */
+void elog_set_fmt(uint8_t level, size_t format);
+
+/**
+ * @brief set log filter.
+ *
+ * @param level the basic level of log filter.
+ * @param enabled true: enable,  false: disable
+ *
+ * @note if the log's tag is not set in the tag filters, it will be filtered by this basic level.
+ *      Otherwise filtered by tag's level.
+ */
+void elog_set_filter(uint8_t level, bool enabled);
+
+#if defined(ELOG_FILTER_TAG_ENABLE) && (ELOG_FILTER_TAG_ENABLE != 0)
+/**
+ * @brief Set the filter's level by different tag.
+ * The log on this tag which level is less than it will stop output.
+ *
+ * @example:
+ *     // the example tag log enter silent mode
+ *     elog_set_filter_tag_lvl("example", ELOG_FILTER_LVL_SILENT);
+ *     // the example tag log which level is less than INFO level will stop output
+ *     elog_set_filter_tag_lvl("example", ELOG_LVL_INFO);
+ *     // remove example tag's level filter, all level log will resume output
+ *     elog_set_filter_tag_lvl("example", ELOG_FILTER_LVL_ALL);
+ *
+ * @param tag log tag
+ * @param level The filter level. When the level is ELOG_FILTER_LVL_SILENT, the log enter silent mode.
+ *        When the level is ELOG_FILTER_LVL_ALL, it will remove this tag's level filer.
+ *        Then all level log will resume output.
+ *
+ * @return reference to ElogErrCode.
+ *
+ * @note can not be called in interrupt environments.
+ */
+ElogErrCode elog_set_filter_tag_lvl(const char *tag, uint8_t level);
+
+/**
+ * @brief get the level on tag's level filer
+ *
+ * @param tag tag
+
+ * @return It will return the lowest level when tag was not found.
+ *         Other level will return when tag was found or failed.
+ *
+ * @note can not be called in interrupt environments.
+ */
+uint8_t elog_get_filter_tag_lvl(const char *tag);
+#endif /* ELOG_FILTER_TAG_ENABLE */
+
+/**
+ * @brief Set a hook function to EasyLogger assert. It will run when the expression is false.
+ *
+ * @param hook the hook function
+ */
+void elog_assert_set_hook(void (*hook)(const char *expr, const char *func, size_t line));
+
+/**
+ * @brief EasyLogger initialize.
+ *
+ * @return result
+ *
+ * @note can not be called in interrupt environments.
+ */
+ElogErrCode elog_init(void);
+
+/**
+ * @brief EasyLogger deinitialize.
+ *
+ */
+void elog_deinit(void);
+
+/**
+ * @brief EasyLogger start after initialize.
+ */
+void elog_start(void);
+
+/**
+ * @brief EasyLogger stop after initialize.
+ */
+void elog_stop(void);
+
+/**
+ * @brief output RAW format log
+ *
+ * @param in_isr called environment. true: called in interrupt, false: called normally.
+ * @param appender appender
+ * @param format output format
+ * @param ... args
+ */
+void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...);
+
+/**
+ * @brief output the log, full type is: [time] I/tag[p(p_info) t(t_info)][.\dir\filename.c:function(line)]: your raw log.
+ *
+ * @param in_isr called environment. true: called in interrupt, false: called normally.
+ * @param appender appender
+ * @param level level
+ * @param tag tag
+ * @param file file name
+ * @param func function name
+ * @param line line number
+ * @param format output format
+ * @param ... args
+ */
+void elog_output(bool in_isr, uint32_t appender, uint8_t level,
+                 const char *tag, const char *file, const char *func, const long line,
+                 const char *format, ...);
+
+/**
+ * @brief dump the hex format data to log
+ *
+ * @param in_isr called environment. true: called in interrupt, false: called normally.
+ * @param appender appender
+ * @param name name for hex object, it will show on log header
+ * @param width hex number for every line, such as: 16, 32
+ * @param buf hex buffer
+ * @param size buffer size
+ */
+void elog_hexdump(bool in_isr, uint32_t appender, const char *name, uint8_t width, const void *buf, uint16_t size);
+#endif /* ELOG_OUTPUT_ENABLE */
 
 /* elog_utils.c */
 size_t elog_strcpy(size_t cur_len, char *dst, const char *src);

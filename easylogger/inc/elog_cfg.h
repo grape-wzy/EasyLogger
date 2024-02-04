@@ -30,26 +30,32 @@
 #define _ELOG_CFG_H_
 /*---------------------------------------------------------------------------*/
 /* enable log output. */
-#define ELOG_OUTPUT_ENABLE
+#define ELOG_OUTPUT_ENABLE                       1
 /* setting static output log level. range: from ELOG_LVL_ASSERT to ELOG_LVL_VERBOSE */
 #define ELOG_OUTPUT_LVL                          ELOG_LVL_VERBOSE
 /* enable assert check */
-#define ELOG_ASSERT_ENABLE
+#define ELOG_ASSERT_ENABLE                       0
+/* enable the isr environment support */
+#define ELOG_USING_IN_ISR                        0
+/* enable log filter's tag support. Tag's filter level is higher than basic level */
+#define ELOG_FILTER_TAG_ENABLE                   1
+/* enable the file name support in log format */
+#define ELOG_FMT_FILE_ENABLE                     0
+/* enable the directory support in log format. Enable this feature will automatically enable the ELOG_FMT_FILE_ENABLE */
+#define ELOG_FMT_DIR_ENABLE                      0
+/* enable the function name support in log format */
+#define ELOG_FMT_FUNC_ENABLE                     0
 /* buffer size for every line's log */
-#define ELOG_LINE_BUF_SIZE                       1024
-/* output line number max length */
-#define ELOG_LINE_NUM_MAX_LEN                    5
+#define ELOG_LINE_BUF_SIZE                       256
 /* output filter's tag max length */
 #define ELOG_FILTER_TAG_MAX_LEN                  30
-/* output filter's keyword max length */
-#define ELOG_FILTER_KW_MAX_LEN                   16
-/* output filter's tag level max num */
-#define ELOG_FILTER_TAG_LVL_MAX_NUM              5
+/* output filter's tag max num */
+#define ELOG_FILTER_TAG_MAX_NUM                  5
 /* output newline sign */
 #define ELOG_NEWLINE_SIGN                        "\n"
 /*---------------------------------------------------------------------------*/
 /* enable log color */
-#define ELOG_COLOR_ENABLE
+#define ELOG_COLOR_ENABLE                        1
 /* change the some level logs to not default color if you want */
 #define ELOG_COLOR_ASSERT                        (F_MAGENTA B_NULL S_NORMAL)
 #define ELOG_COLOR_ERROR                         (F_RED B_NULL S_NORMAL)
@@ -59,19 +65,34 @@
 #define ELOG_COLOR_VERBOSE                       (F_BLUE B_NULL S_NORMAL)
 /*---------------------------------------------------------------------------*/
 /* enable asynchronous output mode */
-#define ELOG_ASYNC_OUTPUT_ENABLE
+#define ELOG_ASYNC_OUTPUT_ENABLE                 0
 /* the highest output level for async mode, other level will sync output */
 #define ELOG_ASYNC_OUTPUT_LVL                    ELOG_LVL_ASSERT
 /* buffer size for asynchronous output mode */
 #define ELOG_ASYNC_OUTPUT_BUF_SIZE               (ELOG_LINE_BUF_SIZE * 10)
 /* each asynchronous output's log which must end with newline sign */
-#define ELOG_ASYNC_LINE_OUTPUT
+#define ELOG_ASYNC_LINE_OUTPUT                   0
 /* asynchronous output mode using POSIX pthread implementation */
-#define ELOG_ASYNC_OUTPUT_USING_PTHREAD
+#define ELOG_ASYNC_OUTPUT_USING_PTHREAD          0
 /*---------------------------------------------------------------------------*/
 /* enable buffered output mode */
-#define ELOG_BUF_OUTPUT_ENABLE
+#define ELOG_BUF_OUTPUT_ENABLE                   0
 /* buffer size for buffered output mode */
 #define ELOG_BUF_OUTPUT_BUF_SIZE                 (ELOG_LINE_BUF_SIZE * 10)
+
+/* all the log appender.
+ * Multiple output containers can be specified the '|' operator.
+ */
+typedef enum {
+    ELOG_APD_CONSOLE = (1 << 0), /**< log will output to console */
+
+    /* Define your log appender below with shift.
+     * The arguments will be passed to the elog_backend_output() function.
+     * Example:
+     * ELOG_APD_BACKEND_FLASH = (1 << 2),
+     * ELOG_APD_BACKEND_FILE = (1 << 3),
+     */
+    ELOG_APD_ALL = 0xFFFFFFFF,
+} ElogApdIndex;
 
 #endif /* _ELOG_CFG_H_ */

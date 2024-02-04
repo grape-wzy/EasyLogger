@@ -25,91 +25,125 @@
  * Function: Portable interface for each platform.
  * Created on: 2015-04-28
  */
- 
+
 #include <elog.h>
 
 /**
- * EasyLogger port initialize
+ * @brief EasyLogger port initialize
  *
  * @return result
  */
-ElogErrCode elog_port_init(void) {
+ElogErrCode elog_port_init(void)
+{
     ElogErrCode result = ELOG_NO_ERR;
 
     /* add your code here */
-    
+
     return result;
 }
 
 /**
- * EasyLogger port deinitialize
- *
+ * @brief EasyLogger port deinitialize
+
  */
-void elog_port_deinit(void) {
-
+void elog_port_deinit(void)
+{
     /* add your code here */
-
 }
 
 /**
- * output log port interface
+ * @brief output log to console
  *
+ * @param in_isr called environment. true: called in interrupt, false: called normally.
  * @param log output of log
+ *
  * @param size log size
  */
-void elog_port_output(const char *log, size_t size) {
-    
+void elog_console_output(bool in_isr, const char *log, size_t size)
+{
     /* add your code here */
-    
 }
 
 /**
- * output lock
- */
-void elog_port_output_lock(void) {
-    
-    /* add your code here */
-    
-}
-
-/**
- * output unlock
- */
-void elog_port_output_unlock(void) {
-    
-    /* add your code here */
-    
-}
-
-/**
- * get current time interface
+ * @brief output log to others appender, such as file, flash, etc...
  *
- * @return current time
+ * @param in_isr called environment. true: called in interrupt, false: called normally.
+ * @param appender the others appenders, defined in ElogApdIndex @elog_cfg.h file
+ * @param level log's level
+ * @param time time in string format
+ * @param time_len length of time string
+ * @param info the format information in log,
+ *          maybe include level string, tag, process information, thread information, directory information, line information, etc...
+ * @param info_len information length
+ * @param log the raw log message
+ * @param log_len length of raw log message
+ *
+ * @note If the time's/info's/log's len equals to 0 or addr pointer is NULL, meaning that the message is not present in this log.
  */
-const char *elog_port_get_time(void) {
-    
+void elog_backend_output(bool in_isr, uint32_t appender, uint8_t level,
+                         const char *time, size_t time_len,
+                         const char *info, size_t info_len,
+                         const char *log, size_t log_len)
+{
     /* add your code here */
-    
 }
 
 /**
- * get current process name interface
+ * @brief port output lock
+ *
+ * @param in_isr called environment. true: called in interrupt, false: called normally.
+ * @param appender the appender need to be lock.
+ *
+ * @return ELOG_NO_ERR means success operation, otherwise it will failed
+ */
+ElogErrCode elog_output_lock(bool in_isr, uint32_t appender)
+{
+    ElogErrCode result = ELOG_NO_ERR;
+
+    /* add your code here */
+}
+
+/**
+ * @brief port output unlock
+ *
+ * @param in_isr called environment. true: called in interrupt, false: called normally.
+ * @param appender the appender need to be unlock.
+ *
+ * @return ELOG_NO_ERR means success operation, otherwise it will failed
+ */
+ElogErrCode elog_output_unlock(bool in_isr, uint32_t appender)
+{
+    ElogErrCode result = ELOG_NO_ERR;
+
+    /* add your code here */
+}
+
+/**
+ * @brief get current time interface
+ *
+ * @return current time in string format
+ */
+const char *elog_port_get_time(void)
+{
+    /* add your code here */
+}
+
+/**
+ * @brief get current process name interface
  *
  * @return current process name
  */
-const char *elog_port_get_p_info(void) {
-    
+const char *elog_port_get_p_info(void)
+{
     /* add your code here */
-    
 }
 
 /**
- * get current thread name interface
+ * @brief get current thread name interface
  *
  * @return current thread name
  */
-const char *elog_port_get_t_info(void) {
-    
+const char *elog_port_get_t_info(void)
+{
     /* add your code here */
-    
 }
