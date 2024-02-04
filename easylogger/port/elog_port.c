@@ -101,6 +101,8 @@ ElogErrCode elog_output_lock(bool in_isr, uint32_t appender)
     ElogErrCode result = ELOG_NO_ERR;
 
     /* add your code here */
+
+    return result;
 }
 
 /**
@@ -116,6 +118,8 @@ ElogErrCode elog_output_unlock(bool in_isr, uint32_t appender)
     ElogErrCode result = ELOG_NO_ERR;
 
     /* add your code here */
+
+    return result;
 }
 
 /**
