@@ -173,8 +173,8 @@ extern void elog_backend_output(bool in_isr, uint32_t appender, uint8_t level,
                                 const char *time, size_t time_len,
                                 const char *info, size_t info_len,
                                 const char *log, size_t log_len);
-extern bool elog_port_output_lock(bool in_isr, uint32_t appender);
-extern bool elog_port_output_unlock(bool in_isr, uint32_t appender);
+extern bool elog_port_lock(bool in_isr, uint32_t appender);
+extern bool elog_port_unlock(bool in_isr, uint32_t appender);
 
 void elog_set_output_enabled(bool enabled)
 {
@@ -196,16 +196,16 @@ void elog_output_lock_enabled(bool enabled, bool in_isr, uint32_t appender)
         if (!elog.output_is_locked_before_disable && elog.output_is_locked_before_enable) {
             /* the output lock is unlocked before disable, and the lock will unlocking after enable */
 #if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
-            elog_port_output_lock(in_isr, appender);
+            elog_port_lock(in_isr, appender);
 #else
-            elog_port_output_lock(false, appender);
+            elog_port_lock(false, appender);
 #endif /* ELOG_USING_IN_ISR */
         } else if (elog.output_is_locked_before_disable && !elog.output_is_locked_before_enable) {
             /* the output lock is locked before disable, and the lock will locking after enable */
 #if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
-            elog_port_output_unlock(in_isr, appender);
+            elog_port_unlock(in_isr, appender);
 #else
-            elog_port_output_unlock(false, appender);
+            elog_port_unlock(false, appender);
 #endif /* ELOG_USING_IN_ISR */
         }
     }
@@ -215,9 +215,9 @@ ElogErrCode elog_output_lock(bool in_isr, uint32_t appender)
 {
     if (elog.output_lock_enabled) {
 #if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
-        if (elog_port_output_lock(in_isr, appender))
+        if (elog_port_lock(in_isr, appender))
 #else
-        if (elog_port_output_lock(false, appender))
+        if (elog_port_lock(false, appender))
 #endif /* ELOG_USING_IN_ISR */
         {
             elog.output_is_locked_before_disable = true;
@@ -234,9 +234,9 @@ ElogErrCode elog_output_unlock(bool in_isr, uint32_t appender)
 {
     if (elog.output_lock_enabled) {
 #if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
-        if (elog_port_output_unlock(in_isr, appender))
+        if (elog_port_unlock(in_isr, appender))
 #else
-        if (elog_port_output_unlock(false, appender))
+        if (elog_port_unlock(false, appender))
 #endif /* ELOG_USING_IN_ISR */
         {
             elog.output_is_locked_before_disable = false;
@@ -587,6 +587,7 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
 #endif
 
     /* package time */
+    time_len = 0;
     if (level_format & ELOG_FMT_TIME) {
         log_len += elog_strcpy(log_len, log_buf + log_len, "[");
         time_addr = log_buf + log_len;
@@ -654,9 +655,12 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
 
             log_len += elog_strcpy(log_len, log_buf + log_len, (const char *)file_name);
         }
+        if (level_format & (ELOG_FMT_DIR | ELOG_FMT_NAME)){
+            log_len += elog_strcpy(log_len, log_buf + log_len, ":");
+        }
+
         /* package func info */
         if (level_format & ELOG_FMT_FUNC) {
-            log_len += elog_strcpy(log_len, log_buf + log_len, ":");
             log_len += elog_strcpy(log_len, log_buf + log_len, func);
         }
         /* package line info */
@@ -672,10 +676,10 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
         fmt_info_len = 0;
     } else {
         fmt_info_len = log_buf + log_len - fmt_info_addr;
+        log_len += elog_strcpy(log_len, log_buf + log_len, ": ");
     }
 
     /* package other log data to buffer. '\0' must be added in the end by vsnprintf. */
-    log_len += elog_strcpy(log_len, log_buf + log_len, ": ");
     raw_log_addr = log_buf + log_len;
     fmt_result = vsnprintf(raw_log_addr, ELOG_LINE_BUF_SIZE - log_len, format, args);
 

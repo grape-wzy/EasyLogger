@@ -94,11 +94,11 @@ void elog_backend_output(bool in_isr, uint32_t appender, uint8_t level,
  * @param in_isr called environment. true: called in interrupt, false: called normally.
  * @param appender the appender need to be lock.
  *
- * @return ELOG_NO_ERR means success operation, otherwise it will failed
+ * @return true means success operation, otherwise it will failed
  */
-ElogErrCode elog_output_lock(bool in_isr, uint32_t appender)
+bool elog_port_lock(bool in_isr, uint32_t appender)
 {
-    ElogErrCode result = ELOG_NO_ERR;
+    bool result = true;
 
     /* add your code here */
 
@@ -111,11 +111,11 @@ ElogErrCode elog_output_lock(bool in_isr, uint32_t appender)
  * @param in_isr called environment. true: called in interrupt, false: called normally.
  * @param appender the appender need to be unlock.
  *
- * @return ELOG_NO_ERR means success operation, otherwise it will failed
+ * @return true means success operation, otherwise it will failed
  */
-ElogErrCode elog_output_unlock(bool in_isr, uint32_t appender)
+bool elog_port_unlock(bool in_isr, uint32_t appender)
 {
-    ElogErrCode result = ELOG_NO_ERR;
+    bool result = true;
 
     /* add your code here */
 

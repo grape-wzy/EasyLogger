@@ -188,14 +188,14 @@ extern "C" {
 
 /* all formats index */
 typedef enum {
-    ELOG_FMT_LVL    = (1 << 0),    /**< level */
-    ELOG_FMT_TAG    = (1 << 1),    /**< tag */
-    ELOG_FMT_TIME   = (1 << 2),   /**< current time */
+    ELOG_FMT_LVL    = (1 << 0), /**< level */
+    ELOG_FMT_TAG    = (1 << 1), /**< tag */
+    ELOG_FMT_TIME   = (1 << 2), /**< current time */
     ELOG_FMT_P_INFO = (1 << 3), /**< process info */
     ELOG_FMT_T_INFO = (1 << 4), /**< thread info */
-    ELOG_FMT_NAME   = (1 << 5),   /**< file name */
-    ELOG_FMT_DIR    = (1 << 6),    /**< file directory and name */
-    ELOG_FMT_FUNC   = (1 << 7),   /**< function name */
+    ELOG_FMT_NAME   = (1 << 5), /**< file name */
+    ELOG_FMT_DIR    = (1 << 6), /**< file directory and name */
+    ELOG_FMT_FUNC   = (1 << 7), /**< function name */
 } ElogFmtIndex;
 
 /* EasyLogger error code */
