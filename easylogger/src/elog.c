@@ -176,6 +176,64 @@ extern void elog_backend_output(bool in_isr, uint32_t appender, uint8_t level,
 extern bool elog_port_lock(bool in_isr, uint32_t appender);
 extern bool elog_port_unlock(bool in_isr, uint32_t appender);
 
+/* utils */
+/**
+ * @brief Returns a pointer to the first occurrence of s2 in s1, or a null pointer if s2 is not part of s1,
+ *      where the search is limited to the first slen characters of s1.
+ *
+ * @param s1 C string to be scanned.
+ * @param s2 C string containing the sequence of characters to match.
+ * @param len search length limited of s1
+ *
+ * @return A pointer to the first occurrence in s1 of the entire sequence of characters specified in s2,
+ *      or a null pointer if the sequence is not present in s1.
+ */
+static char *elog_strnstr(const char *s1, const char *s2, size_t len)
+{
+    size_t pos, i;
+
+    if (!*s2)
+        return (0);
+
+    pos = 0;
+    while (s1[pos] != '\0' && pos < len) {
+        if (s1[pos] == s2[0]) {
+            i = 1;
+            while ((s2[i] != '\0') && (s1[pos + i] == s2[i]) && (pos + i < len))
+                ++i;
+            if (s2[i] == '\0')
+                return ((char *)&s1[pos]);
+        }
+        ++pos;
+    }
+    return (0);
+}
+
+/**
+ * @brief another copy string function
+ *
+ * @param cur_len current copied log length, max size is ELOG_LINE_BUF_SIZE
+ * @param dst destination
+ * @param src source
+ *
+ * @return copied length
+ */
+static size_t elog_strcpy(size_t cur_len, char *dst, const char *src) {
+    const char *src_old = src;
+
+    if (!dst || !src) return 0;
+
+    while (*src != 0) {
+        /* make sure destination has enough space */
+        if (cur_len++ < ELOG_LINE_BUF_SIZE) {
+            *dst++ = *src++;
+        } else {
+            break;
+        }
+    }
+    return src - src_old;
+}
+
 void elog_set_output_enabled(bool enabled)
 {
     ELOG_ASSERT((enabled == false) || (enabled == true));
@@ -266,7 +324,7 @@ void elog_set_filter(uint8_t level, bool enabled)
 }
 
 #if defined(ELOG_FILTER_TAG_ENABLE) && (ELOG_FILTER_TAG_ENABLE != 0)
-ElogErrCode elog_set_filter_tag_lvl(const char *tag, uint8_t level)
+ElogErrCode elog_set_filter_tag(const char *tag, uint8_t level)
 {
     ELOG_ASSERT(level <= ELOG_LVL_VERBOSE);
     ELOG_ASSERT(tag != ((void *)0));
@@ -283,7 +341,7 @@ ElogErrCode elog_set_filter_tag_lvl(const char *tag, uint8_t level)
     /* find the tag in arr */
     for (i = 0; i < ELOG_FILTER_TAG_MAX_NUM; i++) {
         if (elog.filter.tag_filters[i].enabled &&
-            !strncmp(tag, elog.filter.tag_filters[i].tag, ELOG_FILTER_TAG_MAX_LEN)) {
+            elog_strnstr(tag, elog.filter.tag_filters[i].tag, ELOG_FILTER_TAG_MAX_LEN)) {
             break;
         }
     }
@@ -338,7 +396,7 @@ uint8_t elog_get_filter_tag_lvl(const char *tag)
     /* find the tag in arr */
     for (i = 0; i < ELOG_FILTER_TAG_MAX_NUM; i++) {
         if (elog.filter.tag_filters[i].enabled == true &&
-            !strncmp(tag, elog.filter.tag_filters[i].tag, ELOG_FILTER_TAG_MAX_LEN)) {
+            elog_strnstr(tag, elog.filter.tag_filters[i].tag, ELOG_FILTER_TAG_MAX_LEN)) {
             level = elog.filter.tag_filters[i].level;
             break;
         }
@@ -530,7 +588,7 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
     extern const char *elog_port_get_p_info(void);
     extern const char *elog_port_get_t_info(void);
 
-    size_t newline_len = strlen(ELOG_NEWLINE_SIGN), level_format = elog.lvl_fmt[level], log_len = 0, tag_len, time_len, fmt_info_len, raw_log_len;
+    size_t newline_len = strlen(ELOG_NEWLINE_SIGN), level_format = elog.lvl_fmt[level], log_len = 0, time_len, fmt_info_len, raw_log_len;
     char line_num[ELOG_FMT_LINE_MAX_LEN + 1] = { 0 };
     char tag_sapce[ELOG_FILTER_TAG_MAX_LEN / 2 + 1] = { 0 };
     char *log_buf = log_buf_normal, *file_name = NULL, *time_addr = NULL, *fmt_info_addr = NULL, *raw_log_addr = NULL;
@@ -605,13 +663,7 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
 
     /* package tag info */
     if (level_format & ELOG_FMT_TAG) {
-        tag_len = strlen(tag);
         log_len += elog_strcpy(log_len, log_buf + log_len, tag);
-        /* if the tag length is less than 50% ELOG_FILTER_TAG_MAX_LEN, then fill space */
-        if (tag_len <= ELOG_FILTER_TAG_MAX_LEN / 2) {
-            memset(tag_sapce, ' ', ELOG_FILTER_TAG_MAX_LEN / 2 - tag_len);
-            log_len += elog_strcpy(log_len, log_buf + log_len, tag_sapce);
-        }
     }
 
     /* package process and thread info */
@@ -619,21 +671,18 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
         log_len += elog_strcpy(log_len, log_buf + log_len, "[");
         /* package process info */
         if (level_format & ELOG_FMT_P_INFO) {
-            log_len += elog_strcpy(log_len, log_buf + log_len, "p(");
+            log_len += elog_strcpy(log_len, log_buf + log_len, "p:");
             log_len += elog_strcpy(log_len, log_buf + log_len, elog_port_get_p_info());
 
             if (level_format & ELOG_FMT_T_INFO)
-                log_len += elog_strcpy(log_len, log_buf + log_len, ") ");
-            else
-                log_len += elog_strcpy(log_len, log_buf + log_len, ")");
+                log_len += elog_strcpy(log_len, log_buf + log_len, " ");
         }
         /* package thread info */
         if (level_format & ELOG_FMT_T_INFO) {
-            log_len += elog_strcpy(log_len, log_buf + log_len, "t(");
+            log_len += elog_strcpy(log_len, log_buf + log_len, "t:");
             log_len += elog_strcpy(log_len, log_buf + log_len, elog_port_get_t_info());
-            log_len += elog_strcpy(log_len, log_buf + log_len, ")");
         }
-        log_len += elog_strcpy(log_len, log_buf + log_len, "] ");
+        log_len += elog_strcpy(log_len, log_buf + log_len, "]");
     }
 
     /* package file directory and name, function name and line number info */
@@ -658,16 +707,16 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
         if (level_format & (ELOG_FMT_DIR | ELOG_FMT_NAME)){
             log_len += elog_strcpy(log_len, log_buf + log_len, ":");
         }
+        /* package line info */
+        snprintf(line_num, ELOG_FMT_LINE_MAX_LEN, "%ld", line);
+        log_len += elog_strcpy(log_len, log_buf + log_len, line_num);
 
         /* package func info */
         if (level_format & ELOG_FMT_FUNC) {
+            log_len += elog_strcpy(log_len, log_buf + log_len, " ");
             log_len += elog_strcpy(log_len, log_buf + log_len, func);
         }
-        /* package line info */
-        log_len += elog_strcpy(log_len, log_buf + log_len, "(");
-        snprintf(line_num, ELOG_FMT_LINE_MAX_LEN, "%ld", line);
-        log_len += elog_strcpy(log_len, log_buf + log_len, line_num);
-        log_len += elog_strcpy(log_len, log_buf + log_len, ")]");
+        log_len += elog_strcpy(log_len, log_buf + log_len, "]");
     }
 
     /* reacquire the fmt info addr and fmt info len */
