@@ -35,6 +35,8 @@
 #define ELOG_OUTPUT_LVL                          ELOG_LVL_VERBOSE
 /* enable assert check */
 #define ELOG_ASSERT_ENABLE                       0
+/* enable dual buffered output feature */
+#define ELOG_OUTPUT_DUAL_BUFF                    1
 /* enable the isr environment support */
 #define ELOG_USING_IN_ISR                        0
 /* enable log filter's tag support. Tag's filter level is higher than basic level */

@@ -64,50 +64,50 @@
  * CSI(Control Sequence Introducer/Initiator) sign
  * more information on https://en.wikipedia.org/wiki/ANSI_escape_code
  */
-#define CSI_START "\033["
-#define CSI_END   "\033[0m"
+#define CSI_START                       "\033["
+#define CSI_END                         "\033[0m"
 /* output log front color */
-#define F_BLACK   "30;"
-#define F_RED     "31;"
-#define F_GREEN   "32;"
-#define F_YELLOW  "33;"
-#define F_BLUE    "34;"
-#define F_MAGENTA "35;"
-#define F_CYAN    "36;"
-#define F_WHITE   "37;"
+#define F_BLACK                         "30;"
+#define F_RED                           "31;"
+#define F_GREEN                         "32;"
+#define F_YELLOW                        "33;"
+#define F_BLUE                          "34;"
+#define F_MAGENTA                       "35;"
+#define F_CYAN                          "36;"
+#define F_WHITE                         "37;"
 /* output log background color */
 #define B_NULL
-#define B_BLACK     "40;"
-#define B_RED       "41;"
-#define B_GREEN     "42;"
-#define B_YELLOW    "43;"
-#define B_BLUE      "44;"
-#define B_MAGENTA   "45;"
-#define B_CYAN      "46;"
-#define B_WHITE     "47;"
+#define B_BLACK                         "40;"
+#define B_RED                           "41;"
+#define B_GREEN                         "42;"
+#define B_YELLOW                        "43;"
+#define B_BLUE                          "44;"
+#define B_MAGENTA                       "45;"
+#define B_CYAN                          "46;"
+#define B_WHITE                         "47;"
 /* output log fonts style */
-#define S_BOLD      "1m"
-#define S_UNDERLINE "4m"
-#define S_BLINK     "5m"
-#define S_NORMAL    "22m"
+#define S_BOLD                          "1m"
+#define S_UNDERLINE                     "4m"
+#define S_BLINK                         "5m"
+#define S_NORMAL                        "22m"
 /* output log default color definition: [front color] + [background color] + [show style] */
 #ifndef ELOG_COLOR_ASSERT
-#define ELOG_COLOR_ASSERT (F_MAGENTA B_NULL S_NORMAL)
+#define ELOG_COLOR_ASSERT               (F_MAGENTA B_NULL S_NORMAL)
 #endif
 #ifndef ELOG_COLOR_ERROR
-#define ELOG_COLOR_ERROR (F_RED B_NULL S_NORMAL)
+#define ELOG_COLOR_ERROR                (F_RED B_NULL S_NORMAL)
 #endif
 #ifndef ELOG_COLOR_WARN
-#define ELOG_COLOR_WARN (F_YELLOW B_NULL S_NORMAL)
+#define ELOG_COLOR_WARN                 (F_YELLOW B_NULL S_NORMAL)
 #endif
 #ifndef ELOG_COLOR_INFO
-#define ELOG_COLOR_INFO (F_CYAN B_NULL S_NORMAL)
+#define ELOG_COLOR_INFO                 (F_CYAN B_NULL S_NORMAL)
 #endif
 #ifndef ELOG_COLOR_DEBUG
-#define ELOG_COLOR_DEBUG (F_GREEN B_NULL S_NORMAL)
+#define ELOG_COLOR_DEBUG                (F_GREEN B_NULL S_NORMAL)
 #endif
 #ifndef ELOG_COLOR_VERBOSE
-#define ELOG_COLOR_VERBOSE (F_BLUE B_NULL S_NORMAL)
+#define ELOG_COLOR_VERBOSE              (F_BLUE B_NULL S_NORMAL)
 #endif
 #endif /* ELOG_COLOR_ENABLE */
 
@@ -142,25 +142,28 @@ static char log_buf_normal[ELOG_LINE_BUF_SIZE] = { 0 };
 #if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
 static char log_buf_isr[ELOG_LINE_BUF_SIZE] = { 0 };
 #endif
+#if defined(ELOG_OUTPUT_DUAL_BUFF) && (ELOG_OUTPUT_DUAL_BUFF != 0)
+static char log_buf_backup[ELOG_LINE_BUF_SIZE] = { 0 };
+#endif
 
 /* level output info */
 static const char *level_output_info[] = {
-    [ELOG_LVL_ASSERT] = "A/",
-    [ELOG_LVL_ERROR] = "E/",
-    [ELOG_LVL_WARN] = "W/",
-    [ELOG_LVL_INFO] = "I/",
-    [ELOG_LVL_DEBUG] = "D/",
+    [ELOG_LVL_ASSERT]  = "A/",
+    [ELOG_LVL_ERROR]   = "E/",
+    [ELOG_LVL_WARN]    = "W/",
+    [ELOG_LVL_INFO]    = "I/",
+    [ELOG_LVL_DEBUG]   = "D/",
     [ELOG_LVL_VERBOSE] = "V/",
 };
 
 #if defined(ELOG_COLOR_ENABLE) && (ELOG_COLOR_ENABLE!= 0)
 /* color output info */
 static const char *color_output_info[] = {
-    [ELOG_LVL_ASSERT] = ELOG_COLOR_ASSERT,
-    [ELOG_LVL_ERROR] = ELOG_COLOR_ERROR,
-    [ELOG_LVL_WARN] = ELOG_COLOR_WARN,
-    [ELOG_LVL_INFO] = ELOG_COLOR_INFO,
-    [ELOG_LVL_DEBUG] = ELOG_COLOR_DEBUG,
+    [ELOG_LVL_ASSERT]  = ELOG_COLOR_ASSERT,
+    [ELOG_LVL_ERROR]   = ELOG_COLOR_ERROR,
+    [ELOG_LVL_WARN]    = ELOG_COLOR_WARN,
+    [ELOG_LVL_INFO]    = ELOG_COLOR_INFO,
+    [ELOG_LVL_DEBUG]   = ELOG_COLOR_DEBUG,
     [ELOG_LVL_VERBOSE] = ELOG_COLOR_VERBOSE,
 };
 #endif /* ELOG_COLOR_ENABLE */
@@ -221,7 +224,7 @@ static char *elog_strnstr(const char *s1, const char *s2, size_t len)
 static size_t elog_strcpy(size_t cur_len, char *dst, const char *src) {
     const char *src_old = src;
 
-    if (!dst || !src) return 0;
+    if (!dst || !src) return (0);
 
     while (*src != 0) {
         /* make sure destination has enough space */
@@ -517,12 +520,38 @@ void elog_stop(void)
     LOG_I("EasyLogger V%s is deinitialize success.", ELOG_SW_VERSION);
 }
 
+static char *get_log_buff(bool in_isr)
+{
+#if defined(ELOG_OUTPUT_DUAL_BUFF) && (ELOG_OUTPUT_DUAL_BUFF != 0)
+    static bool buff_backup_in_used = false;
+
+    if (buff_backup_in_used){
+        buff_backup_in_used = false;
+#if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
+        if (in_isr) {
+            return log_buf_isr;
+        }
+#endif
+        return log_buf_normal;
+    }
+    buff_backup_in_used = true;
+    return log_buf_backup;
+#else
+#if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
+        if (in_isr) {
+            return log_buf_isr;
+        }
+#endif
+        return log_buf_normal;
+#endif
+}
+
 void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...)
 {
     va_list args;
     size_t log_len = 0;
     int fmt_result;
-    char *log_buf = log_buf_normal;
+    char *log_buf = NULL;
 
     /* check output enabled */
     if (!elog.output_enabled) {
@@ -534,18 +563,14 @@ void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...)
         return;
     }
 
-#if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
-    if (in_isr) {
-        log_buf = log_buf_isr;
-    }
-#endif
+    /* lock output */
+    if (ELOG_NO_ERR != elog_output_lock(in_isr, appender))
+        return;
 
     /* args point to the first variable parameter */
     va_start(args, format);
 
-    /* lock output */
-    if (ELOG_NO_ERR != elog_output_lock(in_isr, appender))
-        return;
+    log_buf = get_log_buff(in_isr);
 
     /* package log data to buffer */
     fmt_result = vsnprintf(log_buf, ELOG_LINE_BUF_SIZE, format, args);
@@ -590,8 +615,7 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
 
     size_t newline_len = strlen(ELOG_NEWLINE_SIGN), level_format = elog.lvl_fmt[level], log_len = 0, time_len, fmt_info_len, raw_log_len;
     char line_num[ELOG_FMT_LINE_MAX_LEN + 1] = { 0 };
-    char tag_sapce[ELOG_FILTER_TAG_MAX_LEN / 2 + 1] = { 0 };
-    char *log_buf = log_buf_normal, *file_name = NULL, *time_addr = NULL, *fmt_info_addr = NULL, *raw_log_addr = NULL;
+    char *log_buf = NULL, *file_name = NULL, *time_addr = NULL, *fmt_info_addr = NULL, *raw_log_addr = NULL;
     int fmt_result;
     uint8_t tag_level = ELOG_LVL_VERBOSE;
     va_list args;
@@ -629,14 +653,10 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
         return;
     }
 
-#if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
-    if (in_isr) {
-        log_buf = log_buf_isr;
-    }
-#endif
-
     /* args point to the first variable parameter */
     va_start(args, format);
+
+    log_buf = get_log_buff(in_isr);
 
 #if defined(ELOG_COLOR_ENABLE) && (ELOG_COLOR_ENABLE!= 0)
     /* add CSI start sign and color info */
@@ -802,7 +822,7 @@ void elog_hexdump(bool in_isr, uint32_t appender, const char *name, uint8_t widt
     uint16_t i, j;
     uint16_t log_len = 0;
     const uint8_t *buf_p = buf;
-    char *log_buf = log_buf_normal, dump_string[8] = { 0 };
+    char *log_buf = NULL, dump_string[8] = { 0 };
     int fmt_result;
 
     if (!elog.output_enabled) {
@@ -819,18 +839,13 @@ void elog_hexdump(bool in_isr, uint32_t appender, const char *name, uint8_t widt
         return;
     }
 
-#if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
-    if (in_isr) {
-        log_buf = log_buf_isr;
-    }
-#endif
-
     /* lock output */
     if (ELOG_NO_ERR != elog_output_lock(in_isr, appender)) {
         return;
     }
 
     for (i = 0; i < size; i += width) {
+        log_buf = get_log_buff(in_isr);
         /* package header */
         fmt_result = snprintf(log_buf, ELOG_LINE_BUF_SIZE, "D/HEX %s: %04X-%04X: ", name, i, i + width - 1);
         /* calculate log length */
