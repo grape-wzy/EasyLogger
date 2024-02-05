@@ -365,7 +365,6 @@ ElogErrCode elog_set_filter_tag(const char *tag, uint8_t level)
             ret = ELOG_ENO_SPACE;
             for (i = 0; i < ELOG_FILTER_TAG_MAX_NUM; i++) {
                 if (!elog.filter.tag_filters[i].enabled) {
-                    memset(elog.filter.tag_filters[i].tag, '\0', ELOG_FILTER_TAG_MAX_LEN + 1); //TODO: More efficient methods
                     strncpy(elog.filter.tag_filters[i].tag, tag, ELOG_FILTER_TAG_MAX_LEN);
                     elog.filter.tag_filters[i].level = level;
                     elog.filter.tag_filters[i].enabled = true;
