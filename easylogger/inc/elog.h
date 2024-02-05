@@ -29,7 +29,7 @@
 #ifndef __ELOG_H__
 #define __ELOG_H__
 
-#include <elog_cfg_wl55.h>
+#include <elog_cfg.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -188,13 +188,13 @@ extern "C" {
 
 /* all formats index */
 typedef enum {
-    ELOG_FMT_TIME   = (1 << 0), /**< current time */
-    ELOG_FMT_LVL    = (1 << 1), /**< level */
-    ELOG_FMT_TAG    = (1 << 2), /**< tag */
+    ELOG_FMT_LVL    = (1 << 0), /**< level */
+    ELOG_FMT_TAG    = (1 << 1), /**< tag */
+    ELOG_FMT_TIME   = (1 << 2), /**< current time */
     ELOG_FMT_P_INFO = (1 << 3), /**< process info */
     ELOG_FMT_T_INFO = (1 << 4), /**< thread info */
-    ELOG_FMT_DIR    = (1 << 5), /**< file directory and name */
-    ELOG_FMT_NAME   = (1 << 6), /**< file name */
+    ELOG_FMT_NAME   = (1 << 5), /**< file name */
+    ELOG_FMT_DIR    = (1 << 6), /**< file directory and name */
     ELOG_FMT_FUNC   = (1 << 7), /**< function name */
 } ElogFmtIndex;
 
@@ -296,7 +296,7 @@ void elog_set_filter(uint8_t level, bool enabled);
  *
  * @note can not be called in interrupt environments.
  */
-ElogErrCode elog_set_filter_tag(const char *tag, uint8_t level);
+ElogErrCode elog_set_filter_tag_lvl(const char *tag, uint8_t level);
 
 /**
  * @brief get the level on tag's level filer
@@ -354,7 +354,7 @@ void elog_stop(void);
 void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...);
 
 /**
- * @brief output the log, full type is: [time] I/tag(p:p_info t:t_info)(.\dir\filename.c:line function): your raw log.
+ * @brief output the log, full type is: [time] I/tag[p(p_info) t(t_info)][.\dir\filename.c:function(line)]: your raw log.
  *
  * @param in_isr called environment. true: called in interrupt, false: called normally.
  * @param appender appender
@@ -382,6 +382,11 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
  */
 void elog_hexdump(bool in_isr, uint32_t appender, const char *name, uint8_t width, const void *buf, uint16_t size);
 #endif /* ELOG_OUTPUT_ENABLE */
+
+/* elog_utils.c */
+size_t elog_strcpy(size_t cur_len, char *dst, const char *src);
+size_t elog_cpyln(char *line, const char *log, size_t len);
+void *elog_memcpy(void *dst, const void *src, size_t count);
 
 #ifdef __cplusplus
 }

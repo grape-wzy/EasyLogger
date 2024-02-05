@@ -52,28 +52,6 @@ static bool log_buf_is_locked_before_disable = false;
 static void log_buf_lock(void);
 static void log_buf_unlock(void);
 
-
-/**
- * This function will copy memory content from source address to destination
- * address.
- *
- * @param dst the address of destination memory
- * @param src  the address of source memory
- * @param count the copied length
- *
- * @return the address of destination memory
- */
-static void *elog_memcpy(void *dst, const void *src, size_t count) {
-    char *tmp = (char *) dst, *s = (char *) src;
-
-    if (!dst || !src) return 0;
-
-    while (count--)
-        *tmp++ = *s++;
-
-    return dst;
-}
-
 /**
  * EasyLogger flash log plugin initialize.
  *

@@ -102,30 +102,6 @@ extern void elog_output_lock(void);
 extern void elog_output_unlock(void);
 
 /**
- * Copy line log split by newline sign. It will copy all log when the newline sign isn't find.
- *
- * @param line line log buffer
- * @param log origin log buffer
- * @param len origin log buffer length
- *
- * @return copy size
- */
-static size_t elog_cpyln(char *line, const char *log, size_t len) {
-    size_t newline_len = strlen(ELOG_NEWLINE_SIGN), copy_size = 0;
-
-    if (!line || !log) return 0;
-
-    while (len--) {
-        *line++ = *log++;
-        copy_size++;
-        if (copy_size >= newline_len && !strncmp(log - newline_len, ELOG_NEWLINE_SIGN, newline_len)) {
-            break;
-        }
-    }
-    return copy_size;
-}
-
-/**
  * asynchronous output ring buffer used size
  *
  * @return used size
@@ -400,7 +376,7 @@ void elog_async_deinit(void) {
     elog_async_output_notice();
 
     pthread_join(async_output_thread, NULL);
-
+    
     sem_destroy(&output_notice);
 #endif
 
