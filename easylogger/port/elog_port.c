@@ -59,7 +59,7 @@ void elog_port_deinit(void)
  *
  * @param size log size
  */
-void elog_console_output(bool in_isr, const char *log, size_t size)
+void elog_port_console_output(bool in_isr, const char *log, size_t size)
 {
     /* add your code here */
 }
@@ -80,7 +80,7 @@ void elog_console_output(bool in_isr, const char *log, size_t size)
  *
  * @note If the time's/info's/log's len equals to 0 or addr pointer is NULL, meaning that the message is not present in this log.
  */
-void elog_backend_output(bool in_isr, uint32_t appender, uint8_t level,
+void elog_port_backend_output(bool in_isr, uint32_t appender, uint8_t level,
                          const char *time, size_t time_len,
                          const char *info, size_t info_len,
                          const char *log, size_t log_len)

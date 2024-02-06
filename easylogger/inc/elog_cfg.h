@@ -89,7 +89,7 @@ typedef enum {
     ELOG_APD_CONSOLE = (1 << 0), /**< log will output to console */
 
     /* Define your log appender below with shift.
-     * The arguments will be passed to the elog_backend_output() function.
+     * The arguments will be passed to the elog_port_backend_output() function.
      * Example:
      * ELOG_APD_BACKEND_FLASH = (1 << 2),
      * ELOG_APD_BACKEND_FILE = (1 << 3),

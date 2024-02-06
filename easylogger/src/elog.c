@@ -171,11 +171,11 @@ static const char *color_output_info[] = {
 /* EasyLogger assert hook */
 void (*elog_assert_hook)(const char *expr, const char *func, size_t line);
 
-extern void elog_console_output(bool in_isr, const char *log, size_t size);
-extern void elog_backend_output(bool in_isr, uint32_t appender, uint8_t level,
-                                const char *time, size_t time_len,
-                                const char *info, size_t info_len,
-                                const char *log, size_t log_len);
+extern void elog_port_console_output(bool in_isr, const char *log, size_t size);
+extern void elog_port_backend_output(bool in_isr, uint32_t appender, uint8_t level,
+                                     const char *time, size_t time_len,
+                                     const char *info, size_t info_len,
+                                     const char *log, size_t log_len);
 extern bool elog_port_lock(bool in_isr, uint32_t appender);
 extern bool elog_port_unlock(bool in_isr, uint32_t appender);
 
@@ -590,13 +590,13 @@ void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...)
     elog_buf_output(log_buf, log_len);
 #else
     if (appender & ELOG_APD_CONSOLE)
-        elog_console_output(in_isr, log_buf, log_len);
+        elog_port_console_output(in_isr, log_buf, log_len);
 
     if ((appender & ELOG_APD_CONSOLE) != ELOG_APD_CONSOLE)
-        elog_backend_output(in_isr, appender & (~ELOG_APD_CONSOLE), ELOG_LVL_DEBUG,
-                            NULL, 0,
-                            NULL, 0,
-                            log_buf, log_len);
+        elog_port_backend_output(in_isr, appender & (~ELOG_APD_CONSOLE), ELOG_LVL_DEBUG,
+                                 NULL, 0,
+                                 NULL, 0,
+                                 log_buf, log_len);
 #endif
     /* unlock output */
     elog_output_unlock(in_isr, appender);
@@ -802,13 +802,13 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
     elog_buf_output(log_buf, log_len);
 #else
     if (appender & ELOG_APD_CONSOLE)
-        elog_console_output(in_isr, log_buf, log_len);
+        elog_port_console_output(in_isr, log_buf, log_len);
 
     if ((appender & ELOG_APD_CONSOLE) != ELOG_APD_CONSOLE)
-        elog_backend_output(in_isr, appender & (~ELOG_APD_CONSOLE), level,
-                            time_addr, time_len,
-                            fmt_info_addr, fmt_info_len,
-                            raw_log_addr, raw_log_len);
+        elog_port_backend_output(in_isr, appender & (~ELOG_APD_CONSOLE), level,
+                                 time_addr, time_len,
+                                 fmt_info_addr, fmt_info_len,
+                                 raw_log_addr, raw_log_len);
 #endif
     /* unlock output */
     elog_output_unlock(in_isr, appender);
@@ -888,13 +888,13 @@ void elog_hexdump(bool in_isr, uint32_t appender, const char *name, uint8_t widt
         elog_buf_output(log_buf, log_len);
 #else
         if (appender & ELOG_APD_CONSOLE)
-            elog_console_output(in_isr, log_buf, log_len);
+            elog_port_console_output(in_isr, log_buf, log_len);
 
         if ((appender & ELOG_APD_CONSOLE) != ELOG_APD_CONSOLE)
-            elog_backend_output(in_isr, appender & (~ELOG_APD_CONSOLE), ELOG_LVL_DEBUG,
-                                NULL, 0,
-                                NULL, 0,
-                                log_buf, log_len);
+            elog_port_backend_output(in_isr, appender & (~ELOG_APD_CONSOLE), ELOG_LVL_DEBUG,
+                                     NULL, 0,
+                                     NULL, 0,
+                                     log_buf, log_len);
 #endif
     }
     /* unlock output */
