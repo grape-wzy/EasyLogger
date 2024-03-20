@@ -25,7 +25,7 @@
  * Function: Initialize function and other general function.
  * Created on: 2015-04-28
  */
-
+//TODO: 增加一个开启ringbuff特性的配置宏，不开启时，使用标注库中的vsnprintf实现单行输出，最原始的方案；开启后，不再依赖标准库，但需添加printf函数，日志输出将不限制行长度，该模式可提高DMA输出的可靠性
 #define LOG_TAG "elog"
 
 #include <elog.h>
@@ -34,6 +34,8 @@
 #include <stdio.h>
 
 #if defined(ELOG_OUTPUT_ENABLE) && (ELOG_OUTPUT_ENABLE != 0)
+
+#define ELOG_USE_TINY_PRINTF 1
 
 #if !defined(ELOG_OUTPUT_LVL)
 #error "Please configure static output log level (in elog_cfg.h)"

@@ -26,8 +26,8 @@
  * Created on: 2015-07-30
  */
 
-#ifndef _ELOG_CFG_H_
-#define _ELOG_CFG_H_
+#ifndef _CONFIG_H_
+#define _CONFIG_H_
 /*---------------------------------------------------------------------------*/
 /* enable log output. */
 #define ELOG_OUTPUT_ENABLE                       1
@@ -97,4 +97,4 @@ typedef enum {
     ELOG_APD_ALL = 0xFFFFFFFF,
 } ElogApdIndex;
 
-#endif /* _ELOG_CFG_H_ */
+#endif /* _CONFIG_H_ */

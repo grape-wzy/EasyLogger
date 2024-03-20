@@ -29,10 +29,17 @@
 #ifndef __ELOG_H__
 #define __ELOG_H__
 
-#include <elog_cfg.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+
+#ifdef __has_include
+#if __has_include ("elog_cfg.h")
+#include "elog_cfg.h"
+#else
+#include "_config.h"
+#endif
+#endif
 
 #ifdef __cplusplus
 extern "C" {
