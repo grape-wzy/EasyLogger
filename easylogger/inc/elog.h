@@ -37,8 +37,12 @@
 #if __has_include ("elog_cfg.h")
 #include "elog_cfg.h"
 #else
-#include "_config.h"
+#include "default_config.h"
+#warning ""elog_cfg" is not found, use "default_config.h"."
 #endif
+#else
+#include "elog_cfg.h"
+#warning "The pre compiled macro "__has_include" is not supported, please refer to the "default_config.h" to configure your "elog_cfg.h"."
 #endif
 
 #ifdef __cplusplus

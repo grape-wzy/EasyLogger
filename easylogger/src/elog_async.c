@@ -29,7 +29,7 @@
 #include <elog.h>
 #include <string.h>
 
-#ifdef ELOG_ASYNC_OUTPUT_ENABLE
+#if ELOG_ASYNC_OUTPUT_ENABLE
 
 #ifdef ELOG_ASYNC_OUTPUT_USING_PTHREAD
 #include <pthread.h>
