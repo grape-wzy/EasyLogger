@@ -148,7 +148,7 @@ extern "C" {
 #define LOG_TAG                                           "NO_TAG"
 #endif
 #if !defined(LOG_LVL)
-#define LOG_LVL                                           ELOG_LVL_VERBOSE
+#define LOG_LVL                                           ELOG_OUTPUT_LVL
 #endif
 #if !defined(LOG_IN_ISR)
 #define LOG_IN_ISR                                        false
@@ -163,18 +163,28 @@ extern "C" {
  */
 #if LOG_LVL >= ELOG_LVL_ERROR
 #define LOG_E(...)                                        elog_error(LOG_IN_ISR, LOG_APPENDER, LOG_TAG, __VA_ARGS__)
+#else
+#define LOG_E(...)
 #endif
 #if LOG_LVL >= ELOG_LVL_WARN
 #define LOG_W(...)                                        elog_warn(LOG_IN_ISR, LOG_APPENDER, LOG_TAG, __VA_ARGS__)
+#else
+#define LOG_W(...)
 #endif
 #if LOG_LVL >= ELOG_LVL_INFO
 #define LOG_I(...)                                        elog_info(LOG_IN_ISR, LOG_APPENDER, LOG_TAG, __VA_ARGS__)
+#else
+#define LOG_I(...)
 #endif
 #if LOG_LVL >= ELOG_LVL_DEBUG
 #define LOG_D(...)                                        elog_debug(LOG_IN_ISR, LOG_APPENDER, LOG_TAG, __VA_ARGS__)
+#else
+#define LOG_D(...)
 #endif
 #if LOG_LVL >= ELOG_LVL_VERBOSE
 #define LOG_V(...)                                        elog_verbose(LOG_IN_ISR, LOG_APPENDER, LOG_TAG, __VA_ARGS__)
+#else
+#define LOG_V(...)
 #endif
 
 #define LOG_RAW(...)                                      elog_raw(LOG_IN_ISR, LOG_APPENDER, __VA_ARGS__)
