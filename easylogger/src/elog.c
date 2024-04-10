@@ -128,7 +128,7 @@ typedef struct {
 #endif /* ELOG_FILTER_TAG_ENABLE */
     } filter;
 
-    size_t lvl_fmt[ELOG_FILTER_LVL_ALL + 1]; /**< output format for each level */
+    ElogFmtIndex lvl_fmt[ELOG_FILTER_LVL_ALL + 1]; /**< output format for each level */
     bool init_ok                         :1;
     bool output_enabled                  :1;
     bool output_lock_enabled             :1;
@@ -432,6 +432,28 @@ ElogErrCode elog_init(void)
         return result;
     }
 
+    /* output locked status initialize */
+    elog.output_is_locked_before_enable = false;
+    elog.output_is_locked_before_disable = false;
+    /* enable the output lock */
+    elog_output_lock_enabled(true, false, ELOG_APD_ALL);
+
+    /* set basic level is ELOG_OUTPUT_LVL */
+    elog_set_filter(ELOG_OUTPUT_LVL, false);
+    /* set log format to none */
+    for (i = 0; i <= ELOG_FILTER_LVL_ALL; i++) {
+        elog.lvl_fmt[i] = 0;
+    }
+
+#if ELOG_FILTER_TAG_ENABLE
+    /* set tag_level to default val */
+    for (i = 0; i < ELOG_FILTER_TAG_MAX_NUM; i++) {
+        memset(elog.filter.tag_filters[i].tag, '\0', ELOG_FILTER_TAG_MAX_LEN + 1);
+        elog.filter.tag_filters[i].level = ELOG_FILTER_LVL_SILENT;
+        elog.filter.tag_filters[i].enabled = false;
+    }
+#endif /* ELOG_FILTER_TAG_ENABLE */
+
     /* port initialize */
     result = elog_port_init();
     if (result != ELOG_EOK) {
@@ -444,24 +466,6 @@ ElogErrCode elog_init(void)
         return result;
     }
 #endif
-
-    /* enable the output lock */
-    elog_output_lock_enabled(true, false, ELOG_APD_ALL);
-    /* output locked status initialize */
-    elog.output_is_locked_before_enable = false;
-    elog.output_is_locked_before_disable = false;
-
-    /* set basic level is ELOG_OUTPUT_LVL */
-    elog_set_filter(ELOG_OUTPUT_LVL, true);
-
-#if ELOG_FILTER_TAG_ENABLE
-    /* set tag_level to default val */
-    for (i = 0; i < ELOG_FILTER_TAG_MAX_NUM; i++) {
-        memset(elog.filter.tag_filters[i].tag, '\0', ELOG_FILTER_TAG_MAX_LEN + 1);
-        elog.filter.tag_filters[i].level = ELOG_FILTER_LVL_SILENT;
-        elog.filter.tag_filters[i].enabled = false;
-    }
-#endif /* ELOG_FILTER_TAG_ENABLE */
 
     elog.init_ok = true;
 
