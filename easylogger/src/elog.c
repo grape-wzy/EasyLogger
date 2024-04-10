@@ -33,7 +33,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#if defined(ELOG_OUTPUT_ENABLE) && (ELOG_OUTPUT_ENABLE != 0)
+#if ELOG_OUTPUT_ENABLE
 
 #define ELOG_USE_TINY_PRINTF 1
 
@@ -61,7 +61,7 @@
 /* output line number string max length */
 #define ELOG_FMT_LINE_MAX_LEN 5
 
-#if defined(ELOG_COLOR_ENABLE) && (ELOG_COLOR_ENABLE != 0)
+#if ELOG_COLOR_ENABLE
 /**
  * CSI(Control Sequence Introducer/Initiator) sign
  * more information on https://en.wikipedia.org/wiki/ANSI_escape_code
@@ -119,7 +119,7 @@ typedef struct {
     struct {
         uint8_t basic_lvl :7; /**< basic level filter for global, lower than tags filter */
         uint8_t enabled   :1; /**< false : filter is no used   true: filter is used */
-#if defined(ELOG_FILTER_TAG_ENABLE) && (ELOG_FILTER_TAG_ENABLE != 0)
+#if ELOG_FILTER_TAG_ENABLE
         struct {
             uint8_t level   :7;
             uint8_t enabled :1; /**< false : tag is no used   true: tag is used */
@@ -141,10 +141,10 @@ static EasyLogger elog;
 
 /* every line log's buffer */
 static char log_buf_normal[ELOG_LINE_BUF_SIZE] = { 0 };
-#if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
+#if ELOG_USING_IN_ISR
 static char log_buf_isr[ELOG_LINE_BUF_SIZE] = { 0 };
 #endif
-#if defined(ELOG_OUTPUT_DUAL_BUFF) && (ELOG_OUTPUT_DUAL_BUFF != 0)
+#if ELOG_OUTPUT_DUAL_BUFF
 static char log_buf_backup[ELOG_LINE_BUF_SIZE] = { 0 };
 #endif
 
@@ -158,7 +158,7 @@ static const char *level_output_info[] = {
     [ELOG_LVL_VERBOSE] = "V/",
 };
 
-#if defined(ELOG_COLOR_ENABLE) && (ELOG_COLOR_ENABLE != 0)
+#if ELOG_COLOR_ENABLE
 /* color output info */
 static const char *color_output_info[] = {
     [ELOG_LVL_ASSERT]  = ELOG_COLOR_ASSERT,
@@ -258,14 +258,14 @@ void elog_output_lock_enabled(bool enabled, bool in_isr, uint32_t appender)
     if (elog.output_lock_enabled) {
         if (!elog.output_is_locked_before_disable && elog.output_is_locked_before_enable) {
             /* the output lock is unlocked before disable, and the lock will unlocking after enable */
-#if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
+#if ELOG_USING_IN_ISR
             elog_port_lock(in_isr, appender);
 #else
             elog_port_lock(false, appender);
 #endif /* ELOG_USING_IN_ISR */
         } else if (elog.output_is_locked_before_disable && !elog.output_is_locked_before_enable) {
             /* the output lock is locked before disable, and the lock will locking after enable */
-#if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
+#if ELOG_USING_IN_ISR
             elog_port_unlock(in_isr, appender);
 #else
             elog_port_unlock(false, appender);
@@ -277,7 +277,7 @@ void elog_output_lock_enabled(bool enabled, bool in_isr, uint32_t appender)
 ElogErrCode elog_output_lock(bool in_isr, uint32_t appender)
 {
     if (elog.output_lock_enabled) {
-#if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
+#if ELOG_USING_IN_ISR
         if (elog_port_lock(in_isr, appender))
 #else
         if (elog_port_lock(false, appender))
@@ -296,7 +296,7 @@ ElogErrCode elog_output_lock(bool in_isr, uint32_t appender)
 ElogErrCode elog_output_unlock(bool in_isr, uint32_t appender)
 {
     if (elog.output_lock_enabled) {
-#if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
+#if ELOG_USING_IN_ISR
         if (elog_port_unlock(in_isr, appender))
 #else
         if (elog_port_unlock(false, appender))
@@ -328,7 +328,7 @@ void elog_set_filter(uint8_t level, bool enabled)
     elog.filter.enabled = enabled;
 }
 
-#if defined(ELOG_FILTER_TAG_ENABLE) && (ELOG_FILTER_TAG_ENABLE != 0)
+#if ELOG_FILTER_TAG_ENABLE
 ElogErrCode elog_set_filter_tag(const char *tag, uint8_t level)
 {
     ELOG_ASSERT(level <= ELOG_LVL_VERBOSE);
@@ -434,7 +434,7 @@ ElogErrCode elog_init(void)
         return result;
     }
 
-#if defined(ELOG_ASYNC_OUTPUT_ENABLE) && (ELOG_ASYNC_OUTPUT_ENABLE != 0)
+#if ELOG_ASYNC_OUTPUT_ENABLE
     result = elog_async_init();
     if (result != ELOG_NO_ERR) {
         return result;
@@ -450,7 +450,7 @@ ElogErrCode elog_init(void)
     /* set basic level is ELOG_OUTPUT_LVL */
     elog_set_filter(ELOG_OUTPUT_LVL, true);
 
-#if defined(ELOG_FILTER_TAG_ENABLE) && (ELOG_FILTER_TAG_ENABLE != 0)
+#if ELOG_FILTER_TAG_ENABLE
     /* set tag_level to default val */
     for (i = 0; i < ELOG_FILTER_TAG_MAX_NUM; i++) {
         memset(elog.filter.tag_filters[i].tag, '\0', ELOG_FILTER_TAG_MAX_LEN + 1);
@@ -473,7 +473,7 @@ void elog_deinit(void)
         return;
     }
 
-#if defined(ELOG_ASYNC_OUTPUT_ENABLE) && (ELOG_ASYNC_OUTPUT_ENABLE != 0)
+#if ELOG_ASYNC_OUTPUT_ENABLE
     elog_async_deinit();
 #endif
 
@@ -492,9 +492,9 @@ void elog_start(void)
     /* enable output */
     elog_set_output_enabled(true);
 
-#if defined(ELOG_ASYNC_OUTPUT_ENABLE) && (ELOG_ASYNC_OUTPUT_ENABLE != 0)
+#if ELOG_ASYNC_OUTPUT_ENABLE
     elog_async_enabled(true);
-#elif defined(ELOG_BUF_OUTPUT_ENABLE) && (ELOG_BUF_OUTPUT_ENABLE != 0)
+#elif ELOG_BUF_OUTPUT_ENABLE
     elog_buf_enabled(true);
 #endif
 
@@ -511,9 +511,9 @@ void elog_stop(void)
     /* disable output */
     elog_set_output_enabled(false);
 
-#if defined(ELOG_ASYNC_OUTPUT_ENABLE) && (ELOG_ASYNC_OUTPUT_ENABLE != 0)
+#if ELOG_ASYNC_OUTPUT_ENABLE
     elog_async_enabled(false);
-#elif defined(ELOG_BUF_OUTPUT_ENABLE) && (ELOG_BUF_OUTPUT_ENABLE != 0)
+#elif ELOG_BUF_OUTPUT_ENABLE
     elog_buf_enabled(false);
 #endif
 
@@ -523,12 +523,12 @@ void elog_stop(void)
 
 static char *get_log_buff(bool in_isr)
 {
-#if defined(ELOG_OUTPUT_DUAL_BUFF) && (ELOG_OUTPUT_DUAL_BUFF != 0)
+#if ELOG_OUTPUT_DUAL_BUFF
     static bool buff_backup_in_used = false;
 
     if (buff_backup_in_used){
         buff_backup_in_used = false;
-#if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
+#if ELOG_USING_IN_ISR
         if (in_isr) {
             return log_buf_isr;
         }
@@ -538,7 +538,7 @@ static char *get_log_buff(bool in_isr)
     buff_backup_in_used = true;
     return log_buf_backup;
 #else
-#if defined(ELOG_USING_IN_ISR) && (ELOG_USING_IN_ISR != 0)
+#if ELOG_USING_IN_ISR
         if (in_isr) {
             return log_buf_isr;
         }
@@ -583,11 +583,11 @@ void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...)
         log_len = ELOG_LINE_BUF_SIZE;
     }
     /* output log */
-#if defined(ELOG_ASYNC_OUTPUT_ENABLE) && (ELOG_ASYNC_OUTPUT_ENABLE != 0)
+#if ELOG_ASYNC_OUTPUT_ENABLE
     extern void elog_async_output(uint8_t level, const char *log, size_t size);
     /* raw log will using assert level */
     elog_async_output(ELOG_LVL_ASSERT, log_buf, log_len);
-#elif defined(ELOG_BUF_OUTPUT_ENABLE) && (ELOG_BUF_OUTPUT_ENABLE != 0)
+#elif ELOG_BUF_OUTPUT_ENABLE
     extern void elog_buf_output(const char *log, size_t size);
     elog_buf_output(log_buf, log_len);
 #else
@@ -641,7 +641,7 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
 
     /* level filter */
     if (elog.filter.enabled) {
-#if defined(ELOG_FILTER_TAG_ENABLE) && (ELOG_FILTER_TAG_ENABLE != 0)
+#if ELOG_FILTER_TAG_ENABLE
         tag_level = elog_get_filter_tag_lvl(tag);
         if (tag_level < ELOG_LVL_VERBOSE) {
             if (level > tag_level)
@@ -665,7 +665,7 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
 
     log_buf = get_log_buff(in_isr);
 
-#if defined(ELOG_COLOR_ENABLE) && (ELOG_COLOR_ENABLE!= 0)
+#if ELOG_COLOR_ENABLE
     /* add CSI start sign and color info */
     log_len += elog_strcpy(log_len, log_buf + log_len, CSI_START);
     log_len += elog_strcpy(log_len, log_buf + log_len, color_output_info[level]);
@@ -784,7 +784,7 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
         log_len = ELOG_LINE_BUF_SIZE;
     }
     /* overflow check and reserve some space for CSI end sign and newline sign */
-#if defined(ELOG_COLOR_ENABLE) && (ELOG_COLOR_ENABLE!= 0)
+#if ELOG_COLOR_ENABLE
     if (log_len + (sizeof(CSI_END) - 1) + newline_len > ELOG_LINE_BUF_SIZE) {
         /* using max length */
         log_len = ELOG_LINE_BUF_SIZE;
@@ -810,7 +810,7 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
         raw_log_len = log_buf + log_len - raw_log_addr;
     }
 
-#if defined(ELOG_COLOR_ENABLE) && (ELOG_COLOR_ENABLE!= 0)
+#if ELOG_COLOR_ENABLE
     /* add CSI end sign */
     log_len += elog_strcpy(log_len, log_buf + log_len, CSI_END);
 #endif
@@ -818,10 +818,10 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
     log_len += elog_strcpy(log_len, log_buf + log_len, ELOG_NEWLINE_SIGN);
 
     /* output log */
-#if defined(ELOG_ASYNC_OUTPUT_ENABLE) && (ELOG_ASYNC_OUTPUT_ENABLE != 0)
+#if ELOG_ASYNC_OUTPUT_ENABLE
     extern void elog_async_output(uint8_t level, const char *log, size_t size);
     elog_async_output(level, log_buf, log_len);
-#elif defined(ELOG_BUF_OUTPUT_ENABLE) && (ELOG_BUF_OUTPUT_ENABLE != 0)
+#elif ELOG_BUF_OUTPUT_ENABLE
     extern void elog_buf_output(const char *log, size_t size);
     elog_buf_output(log_buf, log_len);
 #else
@@ -904,10 +904,10 @@ void elog_hexdump(bool in_isr, uint32_t appender, const char *name, uint8_t widt
         /* package newline sign */
         log_len += elog_strcpy(log_len, log_buf + log_len, ELOG_NEWLINE_SIGN);
         /* do log output */
-#if defined(ELOG_ASYNC_OUTPUT_ENABLE) && (ELOG_ASYNC_OUTPUT_ENABLE != 0)
+#if ELOG_ASYNC_OUTPUT_ENABLE
         extern void elog_async_output(uint8_t level, const char *log, size_t size);
         elog_async_output(ELOG_LVL_DEBUG, log_buf, log_len);
-#elif defined(ELOG_BUF_OUTPUT_ENABLE) && (ELOG_BUF_OUTPUT_ENABLE != 0)
+#elif ELOG_BUF_OUTPUT_ENABLE
         extern void elog_buf_output(const char *log, size_t size);
         elog_buf_output(log_buf, log_len);
 #else
