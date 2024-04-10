@@ -180,6 +180,12 @@ extern void elog_port_backend_output(bool in_isr, uint32_t appender, uint8_t lev
                                      const char *log, size_t log_len);
 extern bool elog_port_lock(bool in_isr, uint32_t appender);
 extern bool elog_port_unlock(bool in_isr, uint32_t appender);
+#if ELOG_ASYNC_OUTPUT_ENABLE
+extern void elog_async_output(uint8_t level, const char *log, size_t size);
+#endif /* ELOG_ASYNC_OUTPUT_ENABLE */
+#if ELOG_BUF_OUTPUT_ENABLE
+extern void elog_buf_output(const char *log, size_t size);
+#endif /* ELOG_BUF_OUTPUT_ENABLE */
 
 /* utils */
 /**
@@ -589,7 +595,6 @@ void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...)
     /* raw log will using assert level */
     elog_async_output(ELOG_LVL_ASSERT, log_buf, log_len);
 #elif ELOG_BUF_OUTPUT_ENABLE
-    extern void elog_buf_output(const char *log, size_t size);
     elog_buf_output(log_buf, log_len);
 #else
     if (appender & ELOG_APD_CONSOLE)
@@ -682,18 +687,17 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
         log_len += elog_strcpy(log_len, log_buf + log_len, "] ");
     }
 
-    /* record the fmt info addr */
+    /* record the fmt info addr: "tag[p:p_info t:t_info][.\dir\filename.c:line function] */
     fmt_info_addr = log_buf + log_len;
+
     /* package level info */
     if (level_format & ELOG_FMT_LVL) {
         log_len += elog_strcpy(log_len, log_buf + log_len, level_output_info[level]);
     }
-
     /* package tag info */
     if (level_format & ELOG_FMT_TAG) {
         log_len += elog_strcpy(log_len, log_buf + log_len, tag);
     }
-
     /* package process and thread info */
     if (level_format & (ELOG_FMT_P_INFO | ELOG_FMT_T_INFO)) {
         log_len += elog_strcpy(log_len, log_buf + log_len, "[");
@@ -712,7 +716,6 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
         }
         log_len += elog_strcpy(log_len, log_buf + log_len, "]");
     }
-
     /* package file directory and name, function name and line number info */
 #if ELOG_FMT_DIR_ENABLE
     if (level_format & ELOG_FMT_DIR) dir_name_func_not_null = 1;
@@ -824,10 +827,8 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
 
     /* output log */
 #if ELOG_ASYNC_OUTPUT_ENABLE
-    extern void elog_async_output(uint8_t level, const char *log, size_t size);
     elog_async_output(level, log_buf, log_len);
 #elif ELOG_BUF_OUTPUT_ENABLE
-    extern void elog_buf_output(const char *log, size_t size);
     elog_buf_output(log_buf, log_len);
 #else
     if (appender & ELOG_APD_CONSOLE)
@@ -910,10 +911,8 @@ void elog_hexdump(bool in_isr, uint32_t appender, const char *name, uint8_t widt
         log_len += elog_strcpy(log_len, log_buf + log_len, ELOG_NEWLINE_SIGN);
         /* do log output */
 #if ELOG_ASYNC_OUTPUT_ENABLE
-        extern void elog_async_output(uint8_t level, const char *log, size_t size);
         elog_async_output(ELOG_LVL_DEBUG, log_buf, log_len);
 #elif ELOG_BUF_OUTPUT_ENABLE
-        extern void elog_buf_output(const char *log, size_t size);
         elog_buf_output(log_buf, log_len);
 #else
         if (appender & ELOG_APD_CONSOLE)

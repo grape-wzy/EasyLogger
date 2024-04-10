@@ -372,7 +372,7 @@ void elog_stop(void);
 void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...);
 
 /**
- * @brief output the log, full type is: [time] I/tag(p:p_info t:t_info)(.\dir\filename.c:line function): your raw log.
+ * @brief output the log, full type is: [time] I/tag[p:p_info t:t_info][.\dir\filename.c:line function]: your raw log.
  *
  * @param in_isr called environment. true: called in interrupt, false: called normally.
  * @param appender appender
