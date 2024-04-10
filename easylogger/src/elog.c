@@ -223,7 +223,8 @@ static char *elog_strnstr(const char *s1, const char *s2, size_t len)
  *
  * @return copied length
  */
-static size_t elog_strcpy(size_t cur_len, char *dst, const char *src) {
+static size_t elog_strcpy(size_t cur_len, char *dst, const char *src)
+{
     const char *src_old = src;
 
     if (!dst || !src) return (0);
@@ -526,7 +527,7 @@ static char *get_log_buff(bool in_isr)
 #if ELOG_OUTPUT_DUAL_BUFF
     static bool buff_backup_in_used = false;
 
-    if (buff_backup_in_used){
+    if (buff_backup_in_used) {
         buff_backup_in_used = false;
 #if ELOG_USING_IN_ISR
         if (in_isr) {
@@ -539,11 +540,11 @@ static char *get_log_buff(bool in_isr)
     return log_buf_backup;
 #else
 #if ELOG_USING_IN_ISR
-        if (in_isr) {
-            return log_buf_isr;
-        }
+    if (in_isr) {
+        return log_buf_isr;
+    }
 #endif
-        return log_buf_normal;
+    return log_buf_normal;
 #endif
 }
 
@@ -726,22 +727,26 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
     if (dir_name_func_not_null) log_len += elog_strcpy(log_len, log_buf + log_len, "[");
 #endif /* DIR_NAME_FUNC_FLAG */
 #if ELOG_FMT_DIR_ENABLE
-    if (level_format & ELOG_FMT_DIR) { // Contains file path and file name
+    /* Contains file path and file name */
+    if (level_format & ELOG_FMT_DIR) {
         /* package file name info */
         log_len += elog_strcpy(log_len, log_buf + log_len, file);
         log_len += elog_strcpy(log_len, log_buf + log_len, ":");
 #elif ELOG_FMT_NAME_ENABLE
-    if (level_format & ELOG_FMT_NAME) { // get file name
-        file_name = strrchr(file, '\\');    // windows
+    /* get file name */
+    if (level_format & ELOG_FMT_NAME) {
+        file_name = strrchr(file, '\\');                       // windows
         if (file_name == NULL) file_name = strrchr(file, '/'); // linux
-        if (file_name == NULL) file_name = (char *)file;
-        else file_name++;
+        if (file_name == NULL)
+            file_name = (char *)file;
+        else
+            file_name++;
         /* package file name info */
         log_len += elog_strcpy(log_len, log_buf + log_len, (const char *)file_name);
         log_len += elog_strcpy(log_len, log_buf + log_len, ":");
-#elif defined (DIR_NAME_FUNC_FLAG)
+#elif defined(DIR_NAME_FUNC_FLAG)
     if (dir_name_func_not_null) {
-#endif /* ELOG_FMT_DIR_ENABLE */
+#endif  /* ELOG_FMT_DIR_ENABLE */
         /* package line info */
 #ifdef DIR_NAME_FUNC_FLAG
         snprintf(line_num, ELOG_FMT_LINE_MAX_LEN, "%ld", line);

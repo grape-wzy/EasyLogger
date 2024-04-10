@@ -34,7 +34,7 @@
 #include <stdbool.h>
 
 #ifdef __has_include
-#if __has_include ("elog_cfg.h")
+#if __has_include("elog_cfg.h")
 #include "elog_cfg.h"
 #else
 #include "default_config.h"
