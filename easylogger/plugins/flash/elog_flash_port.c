@@ -34,8 +34,8 @@
  * @return result
  */
 ElogErrCode elog_flash_port_init(void) {
-    ElogErrCode result = ELOG_NO_ERR;
-    
+    ElogErrCode result = ELOG_EOK;
+
     /* add your code here */
 
     return result;
@@ -48,25 +48,25 @@ ElogErrCode elog_flash_port_init(void) {
  * @param size log size
  */
 void elog_flash_port_output(const char *log, size_t size) {
-    
+
     /* add your code here */
-    
+
 }
 
 /**
  * flash log lock
  */
 void elog_flash_port_lock(void) {
-    
+
     /* add your code here */
-    
+
 }
 
 /**
  * flash log unlock
  */
 void elog_flash_port_unlock(void) {
-    
+
     /* add your code here */
-    
+
 }

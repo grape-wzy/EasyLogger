@@ -356,7 +356,7 @@ void elog_async_enabled(bool enabled) {
  * @return result
  */
 ElogErrCode elog_async_init(void) {
-    ElogErrCode result = ELOG_NO_ERR;
+    ElogErrCode result = ELOG_EOK;
 
     if (init_ok) {
         return result;

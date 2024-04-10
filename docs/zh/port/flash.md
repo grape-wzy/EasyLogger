@@ -94,7 +94,7 @@ void elog_flash_port_unlock(void)
 摘取自STM32平台下RT-Thread Demo中的初始化过程（[点击查看全部](https://github.com/armink/EasyLogger/blob/master/demo/os/rt-thread/stm32f10x/app/src/app_task.c)）：
 ```c
 /* 初始化EasyFlash及EasyLogger */
-if ((easyflash_init() == EF_NO_ERR)&&(elog_init() == ELOG_NO_ERR)) {
+if ((easyflash_init() == EF_NO_ERR)&&(elog_init() == ELOG_EOK)) {
     /* 设置日志格式 */
     elog_set_fmt(ELOG_LVL_ASSERT, ELOG_FMT_ALL & ~ELOG_FMT_P_INFO);
     elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);

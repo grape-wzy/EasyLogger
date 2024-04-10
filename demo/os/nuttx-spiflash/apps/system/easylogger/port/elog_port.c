@@ -25,7 +25,7 @@
  * Function: Portable interface for linux.
  * Created on: 2015-04-28
  */
- 
+
 #include <elog.h>
 #include <nuttx/config.h>
 #include <stdio.h>
@@ -45,7 +45,7 @@ static pthread_mutex_t output_lock;
  * @return result
  */
 ElogErrCode elog_port_init(void) {
-    ElogErrCode result = ELOG_NO_ERR;
+    ElogErrCode result = ELOG_EOK;
 
     /* add your code here */
     pthread_mutex_init(&output_lock, NULL);
@@ -53,7 +53,7 @@ ElogErrCode elog_port_init(void) {
 #ifdef ELOG_FILE_ENABLE
     elog_file_init();
 #endif
-    
+
     return result;
 }
 
@@ -79,9 +79,9 @@ void elog_port_deinit(void) {
  * @param size log size
  */
 void elog_port_output(const char *log, size_t size) {
-    
+
     /* add your code here */
-    
+
     /* output to terminal */
 #ifdef ELOG_TERMINAL_ENABLE
     printf("%.*s", (int)size, log);
@@ -90,16 +90,16 @@ void elog_port_output(const char *log, size_t size) {
 #ifdef ELOG_FILE_ENABLE
     /* write the file */
     elog_file_write(log, size);
-#endif 
+#endif
 }
 
 /**
  * output lock
  */
 void elog_port_output_lock(void) {
-    
+
     /* add your code here */
-    
+
     pthread_mutex_lock(&output_lock);
 }
 
@@ -107,9 +107,9 @@ void elog_port_output_lock(void) {
  * output unlock
  */
 void elog_port_output_unlock(void) {
-    
+
     /* add your code here */
-    
+
     pthread_mutex_unlock(&output_lock);
 }
 
@@ -119,9 +119,9 @@ void elog_port_output_unlock(void) {
  * @return current time
  */
 const char *elog_port_get_time(void) {
-    
+
     /* add your code here */
-    
+
     static char cur_system_time[24] = { 0 };
 
     time_t cur_t;
@@ -141,9 +141,9 @@ const char *elog_port_get_time(void) {
  * @return current process name
  */
 const char *elog_port_get_p_info(void) {
-    
+
     /* add your code here */
-    
+
     static char cur_process_info[10] = { 0 };
 
     snprintf(cur_process_info, 10, "pid:%04d", getpid());
@@ -157,9 +157,9 @@ const char *elog_port_get_p_info(void) {
  * @return current thread name
  */
 const char *elog_port_get_t_info(void) {
-    
+
     /* add your code here */
-    
+
     static char cur_thread_info[10] = { 0 };
 
     snprintf(cur_thread_info, 10, "tid:%04d", gettid());

@@ -35,7 +35,7 @@
  */
 ElogErrCode elog_port_init(void)
 {
-    ElogErrCode result = ELOG_NO_ERR;
+    ElogErrCode result = ELOG_EOK;
 
     /* add your code here */
 

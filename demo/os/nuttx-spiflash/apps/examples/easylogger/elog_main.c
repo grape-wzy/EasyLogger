@@ -92,7 +92,7 @@ static void easylogger_demo(void) {
     setbuf(stdout, NULL);
 
     /* initialize EasyFlash and EasyLogger */
-    if ((easyflash_init() == EF_NO_ERR)&&(elog_init() == ELOG_NO_ERR)) {
+    if ((easyflash_init() == EF_NO_ERR)&&(elog_init() == ELOG_EOK)) {
         /* set EasyLogger log format */
         elog_set_fmt(ELOG_LVL_ASSERT, ELOG_FMT_ALL);
         elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
@@ -102,7 +102,7 @@ static void easylogger_demo(void) {
         elog_set_fmt(ELOG_LVL_VERBOSE, ELOG_FMT_ALL & ~ELOG_FMT_FUNC);
     #ifdef ELOG_COLOR_ENABLE
         elog_set_text_color_enabled(true);
-    #endif 
+    #endif
         /* initialize EasyLogger Flash plugin */
         elog_flash_init();
         /* start EasyLogger */
@@ -141,4 +141,3 @@ int main(int argc, FAR char *argv[])
   easylogger_demo();
   return 0;
 }
-

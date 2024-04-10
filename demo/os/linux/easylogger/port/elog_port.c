@@ -44,7 +44,7 @@ static pthread_mutex_t output_lock;
  * @return result
  */
 ElogErrCode elog_port_init(void) {
-    ElogErrCode result = ELOG_NO_ERR;
+    ElogErrCode result = ELOG_EOK;
 
     pthread_mutex_init(&output_lock, NULL);
 
@@ -83,7 +83,7 @@ void elog_port_output(const char *log, size_t size) {
 #ifdef ELOG_FILE_ENABLE
     /* write the file */
     elog_file_write(log, size);
-#endif 
+#endif
 }
 
 /**

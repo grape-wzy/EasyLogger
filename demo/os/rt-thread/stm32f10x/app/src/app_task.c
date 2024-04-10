@@ -85,7 +85,7 @@ void sys_init_thread(void* parameter){
 	set_system_status(SYSTEM_STATUS_INIT);
 
     /* initialize EasyFlash and EasyLogger */
-    if ((easyflash_init() == EF_NO_ERR)&&(elog_init() == ELOG_NO_ERR)) {
+    if ((easyflash_init() == EF_NO_ERR)&&(elog_init() == ELOG_EOK)) {
         /* set enabled format */
         elog_set_fmt(ELOG_LVL_ASSERT, ELOG_FMT_ALL & ~ELOG_FMT_P_INFO);
         elog_set_fmt(ELOG_LVL_ERROR, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME);
@@ -275,4 +275,3 @@ void rtthread_startup(void)
     /* never reach here */
     return;
 }
-

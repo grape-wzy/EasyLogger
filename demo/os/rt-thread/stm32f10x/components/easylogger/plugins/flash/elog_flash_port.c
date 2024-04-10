@@ -38,7 +38,7 @@ static struct rt_semaphore flash_log_lock;
  * @return result
  */
 ElogErrCode elog_flash_port_init(void) {
-    ElogErrCode result = ELOG_NO_ERR;
+    ElogErrCode result = ELOG_EOK;
 
     rt_sem_init(&flash_log_lock, "elog flash lock", 1, RT_IPC_FLAG_PRIO);
 

@@ -218,7 +218,7 @@ typedef enum {
 
 /* EasyLogger error code */
 typedef enum {
-    ELOG_NO_ERR = 0,     /**< no error */
+    ELOG_EOK = 0,        /**< no error */
     ELOG_EFAILED,        /**< failure code */
     ELOG_EDENY,          /**< Operation be denied */
     ELOG_ENO_SPACE,      /**< no space in tag filter array */
@@ -259,7 +259,7 @@ void elog_output_lock_enabled(bool enabled, bool in_isr, uint32_t appender);
  * @param in_isr called environment. true: called in interrupt, false: called normally.
  * @param appender the appender need to be lock.
  *
- * @return ELOG_NO_ERR or ELOG_ELOCK_FAILED
+ * @return ELOG_EOK or ELOG_ELOCK_FAILED
  */
 ElogErrCode elog_output_lock(bool in_isr, uint32_t appender);
 
@@ -269,7 +269,7 @@ ElogErrCode elog_output_lock(bool in_isr, uint32_t appender);
  * @param in_isr called environment. true: called in interrupt, false: called normally.
  * @param appender the appender need to be unlock.
  *
- * @return ELOG_NO_ERR or ELOG_ELOCK_FAILED
+ * @return ELOG_EOK or ELOG_ELOCK_FAILED
  */
 ElogErrCode elog_output_unlock(bool in_isr, uint32_t appender);
 
@@ -284,25 +284,25 @@ void elog_set_fmt(uint8_t level, size_t format);
 /**
  * @brief set log filter.
  *
- * @param level the basic level of log filter.
+ * @param basic_level the basic level of log filter.
  * @param enabled true: enable,  false: disable
  *
- * @note if the log's tag is not set in the tag filters, it will be filtered by this basic level.
- *      Otherwise filtered by tag's level.
+ * @note This level is only effective when the tag filter "ELOG_FILTER_TAG_ENABLE" is not enabled or
+ *   the tag is not in the filter or the tag is be set to ELOG_FILTER_LVL_ALL.
  */
-void elog_set_filter(uint8_t level, bool enabled);
+void elog_set_filter(uint8_t basic_level, bool enabled);
 
 #if ELOG_FILTER_TAG_ENABLE
 /**
  * @brief Set the filter's level by different tag.
- * The log on this tag which level is less than it will stop output.
+ * All logs below this level under this tag will be refused to output, and the log under this tag will no
+ * longer be limited by the basic level which set by function: elog_set_filter(uint8_t basic_level, bool enabled).
  *
- * @example:
- *     // the example tag log enter silent mode
+ * @example: the example tag log enter silent mode:
  *     elog_set_filter_tag_lvl("example", ELOG_FILTER_LVL_SILENT);
- *     // the example tag log which level is less than INFO level will stop output
+ * @example: the example tag log which level is less than INFO level will stop output:
  *     elog_set_filter_tag_lvl("example", ELOG_LVL_INFO);
- *     // remove example tag's level filter, all level log will resume output
+ * @example: remove example tag's level filter, all level log will resume output:
  *     elog_set_filter_tag_lvl("example", ELOG_FILTER_LVL_ALL);
  *
  * @param tag log tag
@@ -321,8 +321,8 @@ ElogErrCode elog_set_filter_tag(const char *tag, uint8_t level);
  *
  * @param tag tag
 
- * @return It will return the lowest level when tag was not found.
- *         Other level will return when tag was found or failed.
+ * @return It will return the lowest level(ELOG_LVL_VERBOSE) when tag was not found.
+ *         Other level will return when tag was found.
  *
  * @note can not be called in interrupt environments.
  */

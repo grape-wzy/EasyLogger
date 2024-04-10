@@ -42,7 +42,7 @@ static ElogFileCfg local_cfg;
 
 ElogErrCode elog_file_init(void)
 {
-    ElogErrCode result = ELOG_NO_ERR;
+    ElogErrCode result = ELOG_EOK;
     ElogFileCfg cfg;
 
     if (init_ok)

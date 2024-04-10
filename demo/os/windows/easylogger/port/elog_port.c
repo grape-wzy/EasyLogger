@@ -42,14 +42,14 @@ static HANDLE output_lock = NULL;
  * @return result
  */
 ElogErrCode elog_port_init(void) {
-    ElogErrCode result = ELOG_NO_ERR;
+    ElogErrCode result = ELOG_EOK;
 
     output_lock = CreateMutex(NULL, FALSE, NULL);
 
 #ifdef ELOG_FILE_ENABLE
     elog_file_init();
 #endif
-    
+
     return result;
 }
 
@@ -77,7 +77,7 @@ void elog_port_output(const char *log, size_t size) {
 #ifdef ELOG_FILE_ENABLE
     /* write the file */
     elog_file_write(log, size);
-#endif 
+#endif
 }
 
 /**

@@ -34,7 +34,7 @@
  * @return result
  */
 ElogErrCode elog_file_port_init(void) {
-    ElogErrCode result = ELOG_NO_ERR;
+    ElogErrCode result = ELOG_EOK;
 
     /* do noting, using elog_port.c's locker only */
 

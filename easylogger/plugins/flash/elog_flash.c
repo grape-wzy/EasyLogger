@@ -80,7 +80,7 @@ static void *elog_memcpy(void *dst, const void *src, size_t count) {
  * @return result
  */
 ElogErrCode elog_flash_init(void) {
-    ElogErrCode result = ELOG_NO_ERR;
+    ElogErrCode result = ELOG_EOK;
 
     /* buffer size must be word alignment */
     ELOG_ASSERT(ELOG_FLASH_BUF_SIZE % 4 == 0);

@@ -45,13 +45,13 @@ static void async_output(void *arg);
  * @return result
  */
 ElogErrCode elog_port_init(void) {
-    ElogErrCode result = ELOG_NO_ERR;
+    ElogErrCode result = ELOG_EOK;
 
     rt_sem_init(&output_lock, "elog lock", 1, RT_IPC_FLAG_PRIO);
-    
+
 #ifdef ELOG_ASYNC_OUTPUT_ENABLE
     rt_thread_t async_thread = NULL;
-    
+
     rt_sem_init(&output_notice, "elog async", 0, RT_IPC_FLAG_PRIO);
 
     async_thread = rt_thread_create("elog_async", async_output, NULL, 1024, RT_THREAD_PRIORITY_MAX - 1, 10);

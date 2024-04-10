@@ -38,8 +38,8 @@ static pthread_mutex_t flash_log_lock;
  * @return result
  */
 ElogErrCode elog_flash_port_init(void) {
-    ElogErrCode result = ELOG_NO_ERR;
-    
+    ElogErrCode result = ELOG_EOK;
+
     /* add your code here */
     pthread_mutex_init(&flash_log_lock, NULL);
 
@@ -53,7 +53,7 @@ ElogErrCode elog_flash_port_init(void) {
  * @param size log size
  */
 void elog_flash_port_output(const char *log, size_t size) {
-    
+
     /* add your code here */
     printf("%.*s", size, log);
 
@@ -63,18 +63,18 @@ void elog_flash_port_output(const char *log, size_t size) {
  * flash log lock
  */
 void elog_flash_port_lock(void) {
-    
+
     /* add your code here */
     pthread_mutex_lock(&flash_log_lock);
-    
+
 }
 
 /**
  * flash log unlock
  */
 void elog_flash_port_unlock(void) {
-    
+
     /* add your code here */
     pthread_mutex_unlock(&flash_log_lock);
-    
+
 }

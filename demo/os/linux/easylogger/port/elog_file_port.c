@@ -63,7 +63,7 @@ static void lock_deinit(void);
  * @return result
  */
 ElogErrCode elog_file_port_init(void) {
-    ElogErrCode result = ELOG_NO_ERR;
+    ElogErrCode result = ELOG_EOK;
 
     lock_init();
 
@@ -95,7 +95,7 @@ void elog_file_port_deinit(void)
 }
 
 /**
- * initialize the lock 
+ * initialize the lock
  */
 static void lock_init(void)
 {
@@ -129,7 +129,7 @@ __exit:
 }
 
 /**
- * gets the lock 
+ * gets the lock
  */
 static int lock_open(void)
 {
@@ -163,7 +163,7 @@ err:
 }
 
 /**
- * deinitialize the lock 
+ * deinitialize the lock
  */
 static void lock_deinit(void)
 {

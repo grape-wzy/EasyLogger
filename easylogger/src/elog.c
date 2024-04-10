@@ -291,13 +291,13 @@ ElogErrCode elog_output_lock(bool in_isr, uint32_t appender)
 #endif /* ELOG_USING_IN_ISR */
         {
             elog.output_is_locked_before_disable = true;
-            return ELOG_NO_ERR;
+            return ELOG_EOK;
         }
         return ELOG_ELOCK_FAILED;
     }
 
     elog.output_is_locked_before_enable = true;
-    return ELOG_NO_ERR;
+    return ELOG_EOK;
 }
 
 ElogErrCode elog_output_unlock(bool in_isr, uint32_t appender)
@@ -310,13 +310,13 @@ ElogErrCode elog_output_unlock(bool in_isr, uint32_t appender)
 #endif /* ELOG_USING_IN_ISR */
         {
             elog.output_is_locked_before_disable = false;
-            return ELOG_NO_ERR;
+            return ELOG_EOK;
         }
         return ELOG_ELOCK_FAILED;
     }
 
     elog.output_is_locked_before_enable = false;
-    return ELOG_NO_ERR;
+    return ELOG_EOK;
 }
 
 void elog_set_fmt(uint8_t level, size_t format)
@@ -347,7 +347,7 @@ ElogErrCode elog_set_filter_tag(const char *tag, uint8_t level)
         return ELOG_EDENY;
     }
 
-    if (ELOG_NO_ERR != elog_output_lock(false, ELOG_APD_ALL))
+    if (ELOG_EOK != elog_output_lock(false, ELOG_APD_ALL))
         return ELOG_ELOCK_FAILED;
 
     /* find the tag in arr */
@@ -367,25 +367,22 @@ ElogErrCode elog_set_filter_tag(const char *tag, uint8_t level)
         } else {
             elog.filter.tag_filters[i].level = level;
         }
-        ret = ELOG_NO_ERR;
-    } else {
+        ret = ELOG_EOK;
+    } else if (level < ELOG_FILTER_LVL_ALL) {
         /* only add the new tag's level filer when level is not ELOG_FILTER_LVL_ALL */
-        if (level < ELOG_FILTER_LVL_ALL) {
-            ret = ELOG_ENO_SPACE;
-            for (i = 0; i < ELOG_FILTER_TAG_MAX_NUM; i++) {
-                if (!elog.filter.tag_filters[i].enabled) {
-                    strncpy(elog.filter.tag_filters[i].tag, tag, ELOG_FILTER_TAG_MAX_LEN);
-                    elog.filter.tag_filters[i].level = level;
-                    elog.filter.tag_filters[i].enabled = true;
-
-                    ret = ELOG_NO_ERR;
-                    break;
-                }
+        ret = ELOG_ENO_SPACE;
+        for (i = 0; i < ELOG_FILTER_TAG_MAX_NUM; i++) {
+            if (!elog.filter.tag_filters[i].enabled) {
+                strncpy(elog.filter.tag_filters[i].tag, tag, ELOG_FILTER_TAG_MAX_LEN);
+                elog.filter.tag_filters[i].level = level;
+                elog.filter.tag_filters[i].enabled = true;
+                ret = ELOG_EOK;
+                break;
             }
         }
     }
 
-    if (ELOG_NO_ERR != elog_output_unlock(false, ELOG_APD_ALL))
+    if (ELOG_EOK != elog_output_unlock(false, ELOG_APD_ALL))
         return ELOG_EUNLOCK_FAILED;
 
     return ret;
@@ -395,13 +392,13 @@ uint8_t elog_get_filter_tag_lvl(const char *tag)
 {
     ELOG_ASSERT(tag != ((void *)0));
     uint8_t i = 0;
-    uint8_t level = ELOG_FILTER_LVL_ALL;
+    uint8_t level = ELOG_LVL_VERBOSE;
 
     if (!elog.init_ok || !elog.filter.enabled) {
         return level;
     }
 
-    if (ELOG_NO_ERR != elog_output_lock(false, ELOG_APD_ALL))
+    if (ELOG_EOK != elog_output_lock(false, ELOG_APD_ALL))
         return level;
 
     /* find the tag in arr */
@@ -428,7 +425,7 @@ ElogErrCode elog_init(void)
     extern ElogErrCode elog_port_init(void);
     extern ElogErrCode elog_async_init(void);
 
-    ElogErrCode result = ELOG_NO_ERR;
+    ElogErrCode result = ELOG_EOK;
     uint8_t i = 0;
 
     if (elog.init_ok == true) {
@@ -437,13 +434,13 @@ ElogErrCode elog_init(void)
 
     /* port initialize */
     result = elog_port_init();
-    if (result != ELOG_NO_ERR) {
+    if (result != ELOG_EOK) {
         return result;
     }
 
 #if ELOG_ASYNC_OUTPUT_ENABLE
     result = elog_async_init();
-    if (result != ELOG_NO_ERR) {
+    if (result != ELOG_EOK) {
         return result;
     }
 #endif
@@ -561,18 +558,13 @@ void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...)
     int fmt_result;
     char *log_buf = NULL;
 
-    /* check output enabled */
-    if (!elog.output_enabled) {
-        return;
-    }
-
     /* check output appender */
-    if (!appender) {
+    if (!elog.output_enabled || !appender) {
         return;
     }
 
     /* lock output */
-    if (ELOG_NO_ERR != elog_output_lock(in_isr, appender))
+    if (ELOG_EOK != elog_output_lock(in_isr, appender))
         return;
 
     /* args point to the first variable parameter */
@@ -635,13 +627,8 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
 
     ELOG_ASSERT(level <= ELOG_LVL_VERBOSE);
 
-    /* check output enabled */
-    if (!elog.output_enabled) {
-        return;
-    }
-
     /* check output appender */
-    if (!appender) {
+    if (!elog.output_enabled || !appender) {
         return;
     }
 
@@ -649,20 +636,20 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
     if (elog.filter.enabled) {
 #if ELOG_FILTER_TAG_ENABLE
         tag_level = elog_get_filter_tag_lvl(tag);
-        if (tag_level < ELOG_LVL_VERBOSE) {
-            if (level > tag_level)
+        if (tag_level < ELOG_FILTER_LVL_ALL) { // tag is existing in filter
+            if (tag_level < level)
                 return;
         } else
 #endif /* ELOG_FILTER_TAG_ENABLE */
         {
-            if (level > elog.filter.basic_lvl) {
+            if (elog.filter.basic_lvl < level) {
                 return;
             }
         }
     }
 
     /* lock output */
-    if (ELOG_NO_ERR != elog_output_lock(in_isr, appender)) {
+    if (ELOG_EOK != elog_output_lock(in_isr, appender)) {
         return;
     }
 
@@ -854,22 +841,18 @@ void elog_hexdump(bool in_isr, uint32_t appender, const char *name, uint8_t widt
     char *log_buf = NULL, dump_string[8] = { 0 };
     int fmt_result;
 
-    if (!elog.output_enabled) {
-        return;
-    }
-
     /* check output appender */
-    if (!appender) {
+    if (!elog.output_enabled || !appender) {
         return;
     }
 
     /* level filter */
-    if (elog.filter.enabled && (ELOG_LVL_DEBUG > elog.filter.basic_lvl)) {
+    if (elog.filter.enabled && (elog.filter.basic_lvl < ELOG_LVL_DEBUG)) {
         return;
     }
 
     /* lock output */
-    if (ELOG_NO_ERR != elog_output_lock(in_isr, appender)) {
+    if (ELOG_EOK != elog_output_lock(in_isr, appender)) {
         return;
     }
 
