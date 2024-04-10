@@ -68,14 +68,27 @@ extern "C" {
 /* EasyLogger software version number */
 #define ELOG_SW_VERSION                                   "2.2.99"
 
-#if (defined(ELOG_FMT_DIR_ENABLE) && (ELOG_FMT_DIR_ENABLE != 0)) || (defined(ELOG_FMT_FILE_ENABLE) && (ELOG_FMT_FILE_ENABLE != 0))
+#if ELOG_FMT_DIR_ENABLE
+#undef ELOG_FMT_NAME_ENABLE
+#define ELOG_FMT_NAME_ENABLE                              0
 #define ELOG_FILE_DIR                                     __FILE__
+#ifndef DIR_NAME_FUNC_FLAG
+#define DIR_NAME_FUNC_FLAG
+#endif /* DIR_NAME_FUNC_FLAG */
+#elif ELOG_FMT_NAME_ENABLE
+#define ELOG_FILE_DIR                                     __FILE__
+#ifndef DIR_NAME_FUNC_FLAG
+#define DIR_NAME_FUNC_FLAG
+#endif /* DIR_NAME_FUNC_FLAG */
 #else
 #define ELOG_FILE_DIR                                     "\0"
 #endif
 
-#if defined(ELOG_FMT_FUNC_ENABLE) && (ELOG_FMT_FUNC_ENABLE != 0)
+#if ELOG_FMT_FUNC_ENABLE
 #define ELOG_FUNC_NAME                                    __FUNCTION__
+#ifndef DIR_NAME_FUNC_FLAG
+#define DIR_NAME_FUNC_FLAG
+#endif /* DIR_NAME_FUNC_FLAG */
 #else
 #define ELOG_FUNC_NAME                                    "\0"
 #endif

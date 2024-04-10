@@ -41,10 +41,10 @@
 #define ELOG_USING_IN_ISR                        0
 /* enable log filter's tag support. Tag's filter level is higher than basic level */
 #define ELOG_FILTER_TAG_ENABLE                   1
-/* enable the file name support in log format */
-#define ELOG_FMT_FILE_ENABLE                     0
-/* enable the directory support in log format. Enable this feature will automatically enable the ELOG_FMT_FILE_ENABLE */
+/* enable the directory support in log format. Enable this feature will automatically enable the ELOG_FMT_NAME_ENABLE */
 #define ELOG_FMT_DIR_ENABLE                      0
+/* enable the file name support in log format */
+#define ELOG_FMT_NAME_ENABLE                     0
 /* enable the function name support in log format */
 #define ELOG_FMT_FUNC_ENABLE                     0
 /* buffer size for every line's log */

@@ -158,7 +158,7 @@ static const char *level_output_info[] = {
     [ELOG_LVL_VERBOSE] = "V/",
 };
 
-#if defined(ELOG_COLOR_ENABLE) && (ELOG_COLOR_ENABLE!= 0)
+#if defined(ELOG_COLOR_ENABLE) && (ELOG_COLOR_ENABLE != 0)
 /* color output info */
 static const char *color_output_info[] = {
     [ELOG_LVL_ASSERT]  = ELOG_COLOR_ASSERT,
@@ -615,11 +615,17 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
     extern const char *elog_port_get_t_info(void);
 
     size_t newline_len = strlen(ELOG_NEWLINE_SIGN), level_format = elog.lvl_fmt[level], log_len = 0, time_len, fmt_info_len, raw_log_len;
-    char line_num[ELOG_FMT_LINE_MAX_LEN + 1] = { 0 };
-    char *log_buf = NULL, *file_name = NULL, *time_addr = NULL, *fmt_info_addr = NULL, *raw_log_addr = NULL;
+    char *log_buf = NULL, *time_addr = NULL, *fmt_info_addr = NULL, *raw_log_addr = NULL;
     int fmt_result;
     uint8_t tag_level = ELOG_LVL_VERBOSE;
     va_list args;
+#ifdef DIR_NAME_FUNC_FLAG
+    uint8_t dir_name_func_not_null = 0;
+    char line_num[ELOG_FMT_LINE_MAX_LEN + 1] = { 0 };
+#endif /* DIR_NAME_FUNC_FLAG */
+#if ELOG_FMT_NAME_ENABLE
+    char *file_name = NULL;
+#endif
 
     ELOG_ASSERT(level <= ELOG_LVL_VERBOSE);
 
@@ -707,38 +713,54 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
     }
 
     /* package file directory and name, function name and line number info */
-    if (level_format & (ELOG_FMT_DIR | ELOG_FMT_NAME | ELOG_FMT_FUNC)) {
-        log_len += elog_strcpy(log_len, log_buf + log_len, "[");
-        /* package file info */
-        if (level_format & ELOG_FMT_DIR) {
-            log_len += elog_strcpy(log_len, log_buf + log_len, file);
-        } else if (level_format & ELOG_FMT_NAME) {
-            /* get file name */
-            file_name = strrchr(file, '\\');    // windows
-            if (file_name == NULL)
-                file_name = strrchr(file, '/'); // linux
-
-            if (file_name == NULL)
-                file_name = (char *)file;
-            else
-                file_name++;
-
-            log_len += elog_strcpy(log_len, log_buf + log_len, (const char *)file_name);
-        }
-        if (level_format & (ELOG_FMT_DIR | ELOG_FMT_NAME)){
-            log_len += elog_strcpy(log_len, log_buf + log_len, ":");
-        }
+#if ELOG_FMT_DIR_ENABLE
+    if (level_format & ELOG_FMT_DIR) dir_name_func_not_null = 1;
+#endif
+#if ELOG_FMT_NAME_ENABLE
+    if (level_format & ELOG_FMT_NAME) dir_name_func_not_null = 1;
+#endif
+#if ELOG_FMT_FUNC_ENABLE
+    if (level_format & ELOG_FMT_FUNC) dir_name_func_not_null = 1;
+#endif
+#ifdef DIR_NAME_FUNC_FLAG
+    if (dir_name_func_not_null) log_len += elog_strcpy(log_len, log_buf + log_len, "[");
+#endif /* DIR_NAME_FUNC_FLAG */
+#if ELOG_FMT_DIR_ENABLE
+    if (level_format & ELOG_FMT_DIR) { // Contains file path and file name
+        /* package file name info */
+        log_len += elog_strcpy(log_len, log_buf + log_len, file);
+        log_len += elog_strcpy(log_len, log_buf + log_len, ":");
+#elif ELOG_FMT_NAME_ENABLE
+    if (level_format & ELOG_FMT_NAME) { // get file name
+        file_name = strrchr(file, '\\');    // windows
+        if (file_name == NULL) file_name = strrchr(file, '/'); // linux
+        if (file_name == NULL) file_name = (char *)file;
+        else file_name++;
+        /* package file name info */
+        log_len += elog_strcpy(log_len, log_buf + log_len, (const char *)file_name);
+        log_len += elog_strcpy(log_len, log_buf + log_len, ":");
+#elif defined (DIR_NAME_FUNC_FLAG)
+    if (dir_name_func_not_null) {
+#endif /* ELOG_FMT_DIR_ENABLE */
         /* package line info */
+#ifdef DIR_NAME_FUNC_FLAG
         snprintf(line_num, ELOG_FMT_LINE_MAX_LEN, "%ld", line);
         log_len += elog_strcpy(log_len, log_buf + log_len, line_num);
-
-        /* package func info */
-        if (level_format & ELOG_FMT_FUNC) {
-            log_len += elog_strcpy(log_len, log_buf + log_len, " ");
-            log_len += elog_strcpy(log_len, log_buf + log_len, func);
-        }
-        log_len += elog_strcpy(log_len, log_buf + log_len, "]");
+#endif /* DIR_NAME_FUNC_FLAG */
+#if ELOG_FMT_FUNC_ENABLE
+        if (level_format & ELOG_FMT_FUNC) log_len += elog_strcpy(log_len, log_buf + log_len, ":");
+#endif /* ELOG_FMT_FUNC_ENABLE */
+#ifdef DIR_NAME_FUNC_FLAG
     }
+#endif /* DIR_NAME_FUNC_FLAG */
+
+#if ELOG_FMT_FUNC_ENABLE
+    /* package func info */
+    if (level_format & ELOG_FMT_FUNC) log_len += elog_strcpy(log_len, log_buf + log_len, func);
+#endif /* ELOG_FMT_FUNC_ENABLE */
+#ifdef DIR_NAME_FUNC_FLAG
+    if (dir_name_func_not_null) log_len += elog_strcpy(log_len, log_buf + log_len, "]");
+#endif /* DIR_NAME_FUNC_FLAG */
 
     /* reacquire the fmt info addr and fmt info len */
     if ((log_buf + log_len) == fmt_info_addr) {
