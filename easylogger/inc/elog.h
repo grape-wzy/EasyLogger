@@ -145,13 +145,13 @@ extern "C" {
 #define LOG_TAG                                             "NO_TAG"
 #endif
 #if !defined(LOG_LVL)
-#define LOG_LVL                                              ELOG_OUTPUT_LVL
+#define LOG_LVL                                             ELOG_OUTPUT_LVL
 #endif
 #if !defined(LOG_IN_ISR)
-#define LOG_IN_ISR                                           false
+#define LOG_IN_ISR                                          false
 #endif
 #if !defined(LOG_APPENDER)
-#define LOG_APPENDER                                          ELOG_APD_CONSOLE
+#define LOG_APPENDER                                        ELOG_APD_CONSOLE
 #endif
 
 /**
