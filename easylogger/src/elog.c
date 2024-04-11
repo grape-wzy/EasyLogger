@@ -315,8 +315,7 @@ static size_t elog_strcpy(size_t cur_len, char *dst, const char *src)
             *dst++ = *src++;
         } else if (!elog.weak_vfuncprintf) { //TODO: buff is full, output it now
             break;
-        }
-        else {
+        } else {
             break;
         }
     }
@@ -623,7 +622,7 @@ static char *get_log_buff(bool in_isr)
     if (in_isr) {
         buff = log_buf_isr;
     }
-    if (elog.weak_vfuncprintf){
+    if (elog.weak_vfuncprintf) {
         return log_buf_normal;
     } else if (buff_swap) {
         buff_swap = false;
@@ -632,7 +631,7 @@ static char *get_log_buff(bool in_isr)
     buff_swap = true;
     return buff;
 #else
-    if (elog.weak_vfuncprintf){
+    if (elog.weak_vfuncprintf) {
         return log_buf_normal;
     } else if (elog.buff_swap) {
         elog.buff_swap = false;

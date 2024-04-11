@@ -181,17 +181,18 @@ extern "C" {
 #endif
 #if LOG_LVL >= ELOG_LVL_DEBUG
 #define LOG_D(...)                                          elog_debug(LOG_IN_ISR, LOG_APPENDER, LOG_TAG, __VA_ARGS__)
+#define LOG_HEX(tag, width, buf, size)                      elog_hex(LOG_IN_ISR, LOG_APPENDER, tag, width, buf, size)
+#define LOG_RAW(...)                                        elog_raw(LOG_IN_ISR, LOG_APPENDER, __VA_ARGS__)
 #else
 #define LOG_D(...)
+#define LOG_HEX(tag, width, buf, size)
+#define LOG_RAW(...)
 #endif
 #if LOG_LVL >= ELOG_LVL_VERBOSE
 #define LOG_V(...)                                          elog_verbose(LOG_IN_ISR, LOG_APPENDER, LOG_TAG, __VA_ARGS__)
 #else
 #define LOG_V(...)
 #endif
-
-#define LOG_RAW(...)                                        elog_raw(LOG_IN_ISR, LOG_APPENDER, __VA_ARGS__)
-#define LOG_HEX(tag, width, buf, size)                      elog_hex(LOG_IN_ISR, LOG_APPENDER, tag, width, buf, size)
 
 /* EasyLogger assert for developer. */
 #if defined(ELOG_ASSERT_ENABLE) && (ELOG_ASSERT_ENABLE != 0)
