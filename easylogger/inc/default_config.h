@@ -35,8 +35,6 @@
 #define ELOG_OUTPUT_LVL                             ELOG_LVL_VERBOSE
 /* enable assert check */
 #define ELOG_ASSERT_ENABLE                          0
-/* enable dual buffered output feature */
-#define ELOG_OUTPUT_DUAL_BUFF                       1
 /* enable the isr environment support */
 #define ELOG_USING_IN_ISR                           0
 /* enable log filter's tag support. Tag's filter level is higher than basic level */
@@ -48,7 +46,7 @@
 /* enable the function name support in log format */
 #define ELOG_FMT_FUNC_ENABLE                        0
 /* buffer size for every line's log */
-#define ELOG_LINE_BUF_SIZE                          256
+#define ELOG_OUTPUT_BUF_SIZE                        256
 /* output filter's tag max length */
 #define ELOG_FILTER_TAG_MAX_LEN                     30
 /* output filter's tag max num */
@@ -71,7 +69,7 @@
 /* the highest output level for async mode, other level will sync output */
 #define ELOG_ASYNC_OUTPUT_LVL                       ELOG_LVL_ASSERT
 /* buffer size for asynchronous output mode */
-#define ELOG_ASYNC_OUTPUT_BUF_SIZE                  (ELOG_LINE_BUF_SIZE * 10)
+#define ELOG_ASYNC_OUTPUT_BUF_SIZE                  (ELOG_OUTPUT_BUF_SIZE * 10)
 /* each asynchronous output's log which must end with newline sign */
 #define ELOG_ASYNC_LINE_OUTPUT                      0
 /* asynchronous output mode using POSIX pthread implementation */
@@ -80,7 +78,7 @@
 /* enable buffered output mode */
 #define ELOG_BUF_OUTPUT_ENABLE                      0
 /* buffer size for buffered output mode */
-#define ELOG_BUF_OUTPUT_BUF_SIZE                    (ELOG_LINE_BUF_SIZE * 10)
+#define ELOG_BUF_OUTPUT_BUF_SIZE                    (ELOG_OUTPUT_BUF_SIZE * 10)
 
 /**
  * @brief All the log append.

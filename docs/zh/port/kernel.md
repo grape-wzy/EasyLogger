@@ -146,7 +146,7 @@ const char *elog_port_get_t_info(void)
 
 该配置决定了日志一行最多输出多少字符，单位：byte。
 
-- 操作方法：修改`ELOG_LINE_BUF_SIZE`宏对应值即可
+- 操作方法：修改`ELOG_OUTPUT_BUF_SIZE`宏对应值即可
 
 ### 4.5 行号最大长度
 
@@ -209,7 +209,7 @@ const char *elog_port_get_t_info(void)
 
 #### 4.11.2 异步输出模式缓冲区大小
 
-- 默认大小：`(ELOG_LINE_BUF_SIZE * 10)` ，不定义此宏，将会自动按照默认值设置
+- 默认大小：`(ELOG_OUTPUT_BUF_SIZE * 10)` ，不定义此宏，将会自动按照默认值设置
 - 操作方法：修改`ELOG_ASYNC_OUTPUT_BUF_SIZE`宏对应值即可
 
 #### 4.11.3 异步按行输出日志
@@ -232,7 +232,7 @@ const char *elog_port_get_t_info(void)
 
 #### 4.12.1 缓冲输出模式缓冲区大小
 
-- 默认大小：`(ELOG_LINE_BUF_SIZE * 10)` ，不定义此宏，将会自动按照默认值设置
+- 默认大小：`(ELOG_OUTPUT_BUF_SIZE * 10)` ，不定义此宏，将会自动按照默认值设置
 - 操作方法：修改`ELOG_BUF_OUTPUT_BUF_SIZE`宏对应值即可
 
 

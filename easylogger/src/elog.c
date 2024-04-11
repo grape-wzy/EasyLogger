@@ -31,6 +31,14 @@
     2、判断缓冲区是否写满，写满时则自动调用输出函数执行一次数据输出
     3、切换缓冲区，重复执行1，直至数据填充完毕
     4、主动调用输出函数将剩余数据输出
+
+    20240411：
+    不实用宏，使用弱函数的方式来决定是否使用无限长功能：
+        在该文件中定义一个 vfuncprintf 的弱函数。
+        在未实现该函数的时候：
+            保持现有功能不变的前提下，在elog_strstr中增加对是否实现该弱函数的功能判断(已完成)，并保持现有功能不变。
+        在实现该函数后：
+            elog_strstr中判断不是弱函数，接着判断缓冲区是否已满，满的时候直接执行一次数据输出。
 */
 /* //TODO:
 备用缓冲区用于解决类似DMA输出时，由于串口数据打印速率低于CPU写数据速率，未输出的数据被覆盖的问题。
@@ -52,7 +60,7 @@
 #error "Please configure static output log level (in elog_cfg.h)"
 #endif
 
-#if !defined(ELOG_LINE_BUF_SIZE)
+#if !defined(ELOG_OUTPUT_BUF_SIZE)
 #error "Please configure buffer size for every line's log (in elog_cfg.h)"
 #endif
 
@@ -124,6 +132,32 @@
 #endif
 #endif /* ELOG_COLOR_ENABLE */
 
+/* __e_weak and __e_inline Definitions */
+#if defined(__ARMCC_VERSION)        /* ARM Compiler */
+#define __e_weak                        __attribute__((weak))
+#elif defined (__IAR_SYSTEMS_ICC__) /* for IAR Compiler */
+#define __e_weak                        __weak
+#elif defined (__GNUC__)            /* GNU GCC Compiler */
+#define __e_weak                        __attribute__((weak))
+#elif defined (__ADSPBLACKFIN__)    /* for VisualDSP++ Compiler */
+#define __e_weak                        __attribute__((weak))
+#elif defined (_MSC_VER)
+#define __e_weak
+#elif defined (__TI_COMPILER_VERSION__)
+/* The way that TI compiler set section is different from other(at least
+ * GCC and MDK) compilers. See ARM Optimizing C/C++ Compiler 5.9.3 for more
+ * details. */
+#ifdef __TI_EABI__
+#define __e_weak                        __attribute__((weak))
+#else
+#define __e_weak
+#endif
+#elif defined (__TASKING__)
+#define __e_weak                        __attribute__((weak))
+#else
+    #error not supported tool chain
+#endif /* __ARMCC_VERSION */
+
 /* easy logger */
 typedef struct {
     /* output log's filter */
@@ -140,23 +174,31 @@ typedef struct {
     } filter;
 
     ElogFmtIndex lvl_fmt[ELOG_FILTER_LVL_ALL + 1]; /**< output format for each level */
-    bool init_ok                         :1;
-    bool output_enabled                  :1;
-    bool output_lock_enabled             :1;
-    bool output_is_locked_before_enable  :1;
-    bool output_is_locked_before_disable :1;
+    size_t output_buff_size;
+    uint8_t init_ok                         :1;
+    uint8_t weak_vfuncprintf                :1;
+    uint8_t buff_swap                       :1;
+    uint8_t output_enabled                  :1;
+    uint8_t output_lock_enabled             :1;
+    uint8_t output_is_locked_before_enable  :1;
+    uint8_t output_is_locked_before_disable :1;
 } EasyLogger;
+
+/* output_arg for vfuncprintf */
+typedef struct {
+    bool in_isr;
+    char *buff;
+    size_t buff_size;
+    size_t pos;
+} output_arg;
 
 /* EasyLogger object */
 static EasyLogger elog;
 
 /* every line log's buffer */
-static char log_buf_normal[ELOG_LINE_BUF_SIZE] = { 0 };
+static char log_buf_normal[((ELOG_OUTPUT_BUF_SIZE >> 1) << 1)] = { 0 };
 #if ELOG_USING_IN_ISR
-static char log_buf_isr[ELOG_LINE_BUF_SIZE] = { 0 };
-#endif
-#if ELOG_OUTPUT_DUAL_BUFF
-static char log_buf_backup[ELOG_LINE_BUF_SIZE] = { 0 };
+static char log_buf_isr[((ELOG_OUTPUT_BUF_SIZE >> 1) << 1)] = { 0 };
 #endif
 
 /* level output info */
@@ -199,6 +241,27 @@ extern void elog_buf_output(const char *log, size_t size);
 #endif /* ELOG_BUF_OUTPUT_ENABLE */
 
 /* utils */
+
+static void putc_func(char c, void *extra_arg)
+{
+    output_arg *buff_arg = (output_arg *)extra_arg;
+    buff_arg->buff[buff_arg->pos] = c;
+    if (buff_arg->pos + 1 < buff_arg->buff_size)
+        buff_arg->pos++;
+    else { //TODO: buff is full, output it now
+
+    }
+}
+
+__e_weak int vfuncprintf(void (*func)(char c, void *extra_arg), void *extra_arg, const char *format, va_list arg)
+{
+    output_arg *buff_arg;
+    if (!extra_arg)
+        return -ELOG_EDENY;
+    buff_arg = (output_arg *)extra_arg;
+    return vsnprintf(buff_arg->buff, buff_arg->buff_size, format, arg);
+}
+
 /**
  * @brief Returns a pointer to the first occurrence of s2 in s1, or a null pointer if s2 is not part of s1,
  *      where the search is limited to the first slen characters of s1.
@@ -234,7 +297,7 @@ static char *elog_strnstr(const char *s1, const char *s2, size_t len)
 /**
  * @brief another copy string function
  *
- * @param cur_len current copied log length, max size is ELOG_LINE_BUF_SIZE
+ * @param cur_len current copied log length, max size is elog.output_buff_size
  * @param dst destination
  * @param src source
  *
@@ -248,9 +311,12 @@ static size_t elog_strcpy(size_t cur_len, char *dst, const char *src)
 
     while (*src != 0) {
         /* make sure destination has enough space */
-        if (cur_len++ < ELOG_LINE_BUF_SIZE) {
+        if (cur_len++ < elog.output_buff_size) {
             *dst++ = *src++;
-        } else {
+        } else if (!elog.weak_vfuncprintf) { //TODO: buff is full, output it now
+            break;
+        }
+        else {
             break;
         }
     }
@@ -438,10 +504,20 @@ ElogErrCode elog_init(void)
 
     ElogErrCode result = ELOG_EOK;
     uint8_t i = 0;
+    va_list args;
 
     if (elog.init_ok == true) {
         return result;
     }
+
+    /* get the vfuncprintf state and initialize the output buff size */
+    if (-ELOG_EDENY == vfuncprintf(NULL, NULL, NULL, args)) {
+        elog.weak_vfuncprintf = 1;
+    } else {
+        elog.weak_vfuncprintf = 0;
+    }
+    elog.output_buff_size = (ELOG_OUTPUT_BUF_SIZE >> 1) << elog.weak_vfuncprintf;
+    elog.buff_swap = false;
 
     /* output locked status initialize */
     elog.output_is_locked_before_enable = false;
@@ -542,26 +618,27 @@ void elog_stop(void)
 
 static char *get_log_buff(bool in_isr)
 {
-#if ELOG_OUTPUT_DUAL_BUFF
-    static bool buff_backup_in_used = false;
-
-    if (buff_backup_in_used) {
-        buff_backup_in_used = false;
 #if ELOG_USING_IN_ISR
-        if (in_isr) {
-            return log_buf_isr;
-        }
-#endif
-        return log_buf_normal;
-    }
-    buff_backup_in_used = true;
-    return log_buf_backup;
-#else
-#if ELOG_USING_IN_ISR
+    char *buff = log_buf_normal;
     if (in_isr) {
-        return log_buf_isr;
+        buff = log_buf_isr;
     }
-#endif
+    if (elog.weak_vfuncprintf){
+        return log_buf_normal;
+    } else if (buff_swap) {
+        buff_swap = false;
+        return buff + elog.output_buff_size;
+    }
+    buff_swap = true;
+    return buff;
+#else
+    if (elog.weak_vfuncprintf){
+        return log_buf_normal;
+    } else if (elog.buff_swap) {
+        elog.buff_swap = false;
+        return log_buf_normal + elog.output_buff_size;
+    }
+    elog.buff_swap = true;
     return log_buf_normal;
 #endif
 }
@@ -572,6 +649,7 @@ void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...)
     size_t log_len = 0;
     int fmt_result;
     char *log_buf = NULL;
+    output_arg raw_output_arg;
 
     /* check output appender */
     if (!elog.output_enabled || !appender) {
@@ -588,13 +666,17 @@ void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...)
     log_buf = get_log_buff(in_isr);
 
     /* package log data to buffer */
-    fmt_result = vsnprintf(log_buf, ELOG_LINE_BUF_SIZE, format, args);
+    raw_output_arg.buff      = log_buf;
+    raw_output_arg.buff_size = elog.output_buff_size;
+    raw_output_arg.pos       = 0;
+    raw_output_arg.in_isr    = in_isr;
+    fmt_result = vfuncprintf(putc_func, &raw_output_arg, format, args);
 
     /* output converted log */
-    if ((fmt_result > -1) && (fmt_result <= ELOG_LINE_BUF_SIZE)) {
+    if ((fmt_result > -1) && (fmt_result <= elog.output_buff_size)) {
         log_len = fmt_result;
     } else {
-        log_len = ELOG_LINE_BUF_SIZE;
+        log_len = elog.output_buff_size;
     }
     /* output log */
 #if ELOG_ASYNC_OUTPUT_ENABLE
@@ -631,6 +713,7 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
     char *log_buf = NULL, *time_addr = NULL, *fmt_info_addr = NULL, *raw_log_addr = NULL;
     int fmt_result;
     uint8_t tag_level = ELOG_LVL_VERBOSE;
+    output_arg log_output_arg;
     va_list args;
 #ifdef DIR_NAME_FUNC_FLAG
     uint8_t dir_name_func_not_null = 0;
@@ -783,30 +866,35 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
 
     /* package other log data to buffer. '\0' must be added in the end by vsnprintf. */
     raw_log_addr = log_buf + log_len;
-    fmt_result = vsnprintf(raw_log_addr, ELOG_LINE_BUF_SIZE - log_len, format, args);
+
+    log_output_arg.buff      = raw_log_addr;
+    log_output_arg.buff_size = elog.output_buff_size - log_len;
+    log_output_arg.pos       = 0;
+    log_output_arg.in_isr    = in_isr;
+    fmt_result = vfuncprintf(putc_func, &log_output_arg, format, args);
 
     va_end(args);
     /* calculate log length */
-    if ((log_len + fmt_result <= ELOG_LINE_BUF_SIZE) && (fmt_result > -1)) {
+    if ((log_len + fmt_result <= elog.output_buff_size) && (fmt_result > -1)) {
         log_len += fmt_result;
     } else {
         /* using max length */
-        log_len = ELOG_LINE_BUF_SIZE;
+        log_len = elog.output_buff_size;
     }
     /* overflow check and reserve some space for CSI end sign and newline sign */
 #if ELOG_COLOR_ENABLE
-    if (log_len + (sizeof(CSI_END) - 1) + newline_len > ELOG_LINE_BUF_SIZE) {
+    if (log_len + (sizeof(CSI_END) - 1) + newline_len > elog.output_buff_size) {
         /* using max length */
-        log_len = ELOG_LINE_BUF_SIZE;
+        log_len = elog.output_buff_size;
         /* reserve some space for CSI end sign */
         log_len -= (sizeof(CSI_END) - 1);
         /* reserve some space for newline sign */
         log_len -= newline_len;
     }
 #else
-    if (log_len + newline_len > ELOG_LINE_BUF_SIZE) {
+    if (log_len + newline_len > elog.output_buff_size) {
         /* using max length */
-        log_len = ELOG_LINE_BUF_SIZE;
+        log_len = elog.output_buff_size;
         /* reserve some space for newline sign */
         log_len -= newline_len;
     }
@@ -846,15 +934,25 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
     elog_output_unlock(in_isr, appender);
 }
 
+static void hex_in_char(uint8_t hex, char *s)
+{
+    char up_hex[16] = "0123456789ABCDEF";
+    unsigned char i = 0;
+    while (hex > 0x0F){
+        i++;
+        hex -= 0x10;
+    }
+    *s++ = up_hex[i];
+    *s = up_hex[hex];
+}
+
 void elog_hexdump(bool in_isr, uint32_t appender, const char *name, uint8_t width, const void *buf, uint16_t size)
 {
 #define __is_print(ch) ((unsigned int)((ch) - ' ') < 127u - ' ')
 
-    uint16_t i, j;
-    uint16_t log_len = 0;
+    uint16_t i = 0, j = 0, log_len = 0;
     const uint8_t *buf_p = buf;
     char *log_buf = NULL, dump_string[8] = { 0 };
-    int fmt_result;
 
     /* check output appender */
     if (!elog.output_enabled || !appender) {
@@ -871,22 +969,37 @@ void elog_hexdump(bool in_isr, uint32_t appender, const char *name, uint8_t widt
         return;
     }
 
-    for (i = 0; i < size; i += width) {
+    /* package start line */
+    log_buf = get_log_buff(in_isr);
+    log_len += elog_strcpy(log_len, log_buf + log_len, "D/HEX: ");
+    log_len += elog_strcpy(log_len, log_buf + log_len, name);
+    goto __do_log_out;
+
+    while (i < size) {
         log_buf = get_log_buff(in_isr);
+        log_len = 0;
         /* package header */
-        fmt_result = snprintf(log_buf, ELOG_LINE_BUF_SIZE, "D/HEX %s: %04X-%04X: ", name, i, i + width - 1);
-        /* calculate log length */
-        if ((fmt_result > -1) && (fmt_result <= ELOG_LINE_BUF_SIZE)) {
-            log_len = fmt_result;
-        } else {
-            log_len = ELOG_LINE_BUF_SIZE;
-        }
+        hex_in_char(i >> 8, log_buf + log_len);
+        log_len += 2;
+        hex_in_char(i & 0xFF, log_buf + log_len);
+        log_len += 2;
+        log_buf[log_len++] = '-';
+        hex_in_char((i + width - 1) >> 8, log_buf + log_len);
+        log_len += 2;
+        hex_in_char((i + width - 1) & 0xFF, log_buf + log_len);
+        log_len += 2;
+        log_buf[log_len++] = ':';
+        log_buf[log_len++] = ' ';
+
         /* dump hex */
+        dump_string[2] = ' ';
+        dump_string[3] = '\0';
         for (j = 0; j < width; j++) {
             if (i + j < size) {
-                snprintf(dump_string, sizeof(dump_string), "%02X ", buf_p[i + j]);
+                hex_in_char(buf_p[i + j], dump_string);
             } else {
-                strncpy(dump_string, "   ", sizeof(dump_string));
+                dump_string[0] = ' ';
+                dump_string[1] = ' ';
             }
             log_len += elog_strcpy(log_len, log_buf + log_len, dump_string);
             if ((j + 1) % 8 == 0) {
@@ -895,18 +1008,23 @@ void elog_hexdump(bool in_isr, uint32_t appender, const char *name, uint8_t widt
         }
         log_len += elog_strcpy(log_len, log_buf + log_len, "  ");
         /* dump char for hex */
+        dump_string[1] = '\0';
         for (j = 0; j < width; j++) {
             if (i + j < size) {
-                snprintf(dump_string, sizeof(dump_string), "%c", __is_print(buf_p[i + j]) ? buf_p[i + j] : '.');
+                dump_string[0] = __is_print(buf_p[i + j]) ? buf_p[i + j] : '.';
                 log_len += elog_strcpy(log_len, log_buf + log_len, dump_string);
             }
         }
+        i += width;
+
+__do_log_out:
         /* overflow check and reserve some space for newline sign */
-        if (log_len + strlen(ELOG_NEWLINE_SIGN) > ELOG_LINE_BUF_SIZE) {
-            log_len = ELOG_LINE_BUF_SIZE - strlen(ELOG_NEWLINE_SIGN);
+        if (log_len + strlen(ELOG_NEWLINE_SIGN) > elog.output_buff_size) {
+            log_len = elog.output_buff_size - strlen(ELOG_NEWLINE_SIGN);
         }
         /* package newline sign */
         log_len += elog_strcpy(log_len, log_buf + log_len, ELOG_NEWLINE_SIGN);
+
         /* do log output */
 #if ELOG_ASYNC_OUTPUT_ENABLE
         elog_async_output(ELOG_LVL_DEBUG, log_buf, log_len);

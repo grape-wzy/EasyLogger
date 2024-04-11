@@ -116,7 +116,7 @@ void elog_async_output_notice(void) {
 void elog_entry(void *para) {
     size_t get_log_size = 0;
 #ifdef ELOG_ASYNC_LINE_OUTPUT
-    static char poll_get_buf[ELOG_LINE_BUF_SIZE - 4];
+    static char poll_get_buf[ELOG_OUTPUT_BUF_SIZE - 4];
 #else
     static char poll_get_buf[ELOG_ASYNC_OUTPUT_BUF_SIZE - 4];
 #endif

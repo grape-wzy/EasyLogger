@@ -93,6 +93,12 @@ extern "C" {
 #define ELOG_FUNC_NAME                                      "\0"
 #endif
 
+#if defined(ELOG_OUTPUT_BUF_SIZE) && (ELOG_OUTPUT_BUF_SIZE < 64)
+#warning "It is not recommended to set the output buffer too small as it will increase the time cost of log output"
+#undef ELOG_OUTPUT_BUF_SIZE
+#define ELOG_OUTPUT_BUF_SIZE                                64
+#endif
+
 #if ELOG_OUTPUT_ENABLE
 #if ELOG_OUTPUT_LVL >= ELOG_LVL_ASSERT
 #define elog_assert(in_isr, appender, tag, ...)             elog_output(in_isr, appender, ELOG_LVL_ASSERT, tag, ELOG_FILE_DIR, ELOG_FUNC_NAME, __LINE__, __VA_ARGS__)
@@ -100,7 +106,7 @@ extern "C" {
 #define elog_assert(in_isr, appender, tag, ...)
 #endif /* ELOG_OUTPUT_LVL >= ELOG_LVL_ASSERT */
 #if ELOG_OUTPUT_LVL >= ELOG_LVL_ERROR
-#define elog_error(in_isr, appender, tag, ...)               elog_output(in_isr, appender, ELOG_LVL_ERROR, tag, ELOG_FILE_DIR, ELOG_FUNC_NAME, __LINE__, __VA_ARGS__)
+#define elog_error(in_isr, appender, tag, ...)              elog_output(in_isr, appender, ELOG_LVL_ERROR, tag, ELOG_FILE_DIR, ELOG_FUNC_NAME, __LINE__, __VA_ARGS__)
 #else
 #define elog_error(in_isr, appender, tag, ...)
 #endif /* ELOG_OUTPUT_LVL >= ELOG_LVL_ERROR */

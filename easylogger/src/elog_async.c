@@ -53,7 +53,7 @@
 #endif
 #else
 #ifndef ELOG_ASYNC_POLL_GET_LOG_BUF_SIZE
-#define ELOG_ASYNC_POLL_GET_LOG_BUF_SIZE         (ELOG_LINE_BUF_SIZE - 4)
+#define ELOG_ASYNC_POLL_GET_LOG_BUF_SIZE         (ELOG_OUTPUT_BUF_SIZE - 4)
 #endif
 #endif
 #endif /* ELOG_ASYNC_OUTPUT_USING_PTHREAD */
@@ -75,7 +75,7 @@ static pthread_t async_output_thread;
 #ifdef ELOG_ASYNC_OUTPUT_BUF_SIZE
 #define OUTPUT_BUF_SIZE                          ELOG_ASYNC_OUTPUT_BUF_SIZE
 #else
-#define OUTPUT_BUF_SIZE                          (ELOG_LINE_BUF_SIZE * 10)
+#define OUTPUT_BUF_SIZE                          (ELOG_OUTPUT_BUF_SIZE * 10)
 #endif /* ELOG_ASYNC_OUTPUT_BUF_SIZE */
 
 /* Initialize OK flag */

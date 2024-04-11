@@ -126,7 +126,7 @@ void elog_async_output_notice(void) {
 
 static void async_output(void *arg) {
     size_t get_log_size = 0;
-    static char poll_get_buf[ELOG_LINE_BUF_SIZE - 4];
+    static char poll_get_buf[ELOG_OUTPUT_BUF_SIZE - 4];
 
     while(true) {
         /* waiting log */

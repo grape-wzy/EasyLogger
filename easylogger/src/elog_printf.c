@@ -9,7 +9,6 @@
 #if defined(ELOG_USE_TINY_PRINTF) && (ELOG_USE_TINY_PRINTF != 0)
 
 #include <stdarg.h>
-#include <stdint.h>
 #include <stddef.h>
 
 // #define TINY_PRINTF
@@ -28,6 +27,25 @@
 #define is_digit(c)         ((c) >= '0' && (c) <= '9')
 
 #define GADGET_INITIALIZED  { NULL, NULL, NULL, 0, 0}
+
+/* _vsp_inline Definitions */
+#if defined(__ARMCC_VERSION)        /* ARM Compiler */
+#define _vsp_inline                                          static __inline
+#elif defined (__IAR_SYSTEMS_ICC__) /* for IAR Compiler */
+#define _vsp_inline                                          static inline
+#elif defined (__GNUC__)            /* GNU GCC Compiler */
+#define _vsp_inline                                          static __inline
+#elif defined (__ADSPBLACKFIN__)    /* for VisualDSP++ Compiler */
+#define _vsp_inline                                          static inline
+#elif defined (_MSC_VER)
+#define _vsp_inline                                          static __inline
+#elif defined (__TI_COMPILER_VERSION__)
+#define _vsp_inline                                          static inline
+#elif defined (__TASKING__)
+#define _vsp_inline                                          static inline
+#else
+    #error not supported tool chain
+#endif /* __ARMCC_VERSION */
 
 // wrapper (used as buffer) for output function type
 //
@@ -53,22 +71,19 @@ static char *upper_digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 // gadget. The former assumption holds within the printf library. It also
 // assumes that the output gadget has been properly initialized.
 // Note: If the buffer is fully, the function will return 1.
-static inline char putchar_via_gadget(output_gadget_t *gadget, char c)
+_vsp_inline char putchar_via_gadget(output_gadget_t *gadget, char c)
 {
-    size_t write_pos = gadget->pos++;
+    gadget->pos++;
     // We're _always_ increasing pos, so as to count how may characters
     // _would_ have been written if not for the buff_size limitation
-    if (write_pos >= gadget->buff_size) {
-        return 1;
-    }
-
     if (gadget->function) {
-        // No check for c == '\0' .
-        gadget->function(c, gadget->extra_function_arg);
+        gadget->function(c, gadget->extra_function_arg); // No check for c == '\0' .
+    } else if (gadget->pos > gadget->buff_size) {
+        return 1;
     } else {
         // it must be the case that gadget->buffer != NULL , due to the constraint
         // on output_gadget_t ; and note we're relying on write_pos being non-negative.
-        gadget->buffer[write_pos] = c;
+        gadget->buffer[gadget->pos - 1] = c;
     }
     return 0;
 }
@@ -265,8 +280,8 @@ static char iaddr(output_gadget_t *gadget, unsigned char *addr, int size, int pr
 #define CVTBUFSIZE 80
 static double modf(double x, double *iptr)
 {
-	union {double f; uint64_t i;} u = {x};
-	uint64_t mask;
+	union {double f; size_t i;} u = {x};
+	size_t mask;
 	int e = (int)(u.i>>52 & 0x7ff) - 0x3ff;
 
 	/* no fractional part */
@@ -564,7 +579,7 @@ static char flt(output_gadget_t *output, double num, int size, int precision, ch
 #define CHECK_STR_SIZE(_buf, _str, _size) \
     if ((((_str) - (_buf)) >= ((_size)-1))) { break; }
 
-static inline void format_string_loop(output_gadget_t *output, const char *format, va_list args)
+_vsp_inline void format_string_loop(output_gadget_t *output, const char *format, va_list args)
 {
     int len;
     unsigned long num;
@@ -793,9 +808,13 @@ static int vsnprintf_impl(output_gadget_t *output, const char *format, va_list a
     // possible to call this function with a non-zero pos value for some "remedial printing".
     format_string_loop(output, format, args);
 
-    if (!output->function && output->buffer && output->buff_size != 0) {
-        null_char_pos = output->pos < output->buff_size ? output->pos : output->buff_size - 1;
-        output->buffer[null_char_pos] = '\0';
+    if (!output->function){
+        if (output->buffer && output->buff_size != 0) {
+            null_char_pos = output->pos < output->buff_size ? output->pos : output->buff_size - 1;
+            output->buffer[null_char_pos] = '\0';
+        }
+    } else {
+        putchar_via_gadget(output, '\0');
     }
 
     // return written chars without terminating \0
@@ -819,7 +838,8 @@ int vsnprintf_(char *s, size_t n, const char *format, va_list arg)
 
 int vsprintf_(char *s, const char *format, va_list arg)
 {
-    return vsnprintf_(s, SIZE_MAX, format, arg);
+    size_t max_size = 0;
+    return vsnprintf_(s, (max_size - 1), format, arg);
 }
 
 int vfuncprintf(void (*func)(char c, void *extra_arg), void *extra_arg, const char *format, va_list arg)
