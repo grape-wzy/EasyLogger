@@ -10,18 +10,19 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 
 // #define TINY_PRINTF
 #define HAS_FLOAT
 
 #define ZEROPAD             (1 << 0) /* Pad with zero */
 #define SIGN                (1 << 1) /* Unsigned/signed long */
-#ifndef TINY_PRINTF
+// #ifndef TINY_PRINTF
 #define PLUS                (1 << 2) /* Show plus */
 #define SPACE               (1 << 3) /* Spacer */
 #define LEFT                (1 << 4) /* Left justified */
 #define HEX_PREP            (1 << 5) /* 0x */
-#endif
+// #endif
 #define UPPERCASE           (1 << 6) /* 'ABCDEF' */
 
 #define is_digit(c)         ((c) >= '0' && (c) <= '9')
@@ -88,14 +89,14 @@ _vsp_inline char putchar_via_gadget(output_gadget_t *gadget, char c)
     return 0;
 }
 
-#ifndef TINY_PRINTF
-static size_t strnlen(const char *s, size_t count)
+// #ifndef TINY_PRINTF
+static size_t strnlen1(const char *s, size_t count)
 {
     const char *sc;
     for (sc = s; *sc != '\0' && count--; ++sc) ;
     return sc - s;
 }
-#endif
+// #endif
 
 static int ee_skip_atoi(const char **s)
 {
@@ -280,9 +281,9 @@ static char iaddr(output_gadget_t *gadget, unsigned char *addr, int size, int pr
 #define CVTBUFSIZE 80
 static double modf(double x, double *iptr)
 {
-	union {double f; size_t i;} u = {x};
-	size_t mask;
-	int e = (int)(u.i>>52 & 0x7ff) - 0x3ff;
+	union {double f; uint64_t i;} u = {x};
+	uint64_t mask;
+	int e = (int)((u.i >> 52) & 0x7ff) - 0x3ff;
 
 	/* no fractional part */
 	if (e >= 52) {
@@ -468,6 +469,7 @@ static void parse_float(double value, char *buffer, char format, int precision)
     *buffer = '\0';
 }
 
+#ifndef TINY_PRINTF
 static void decimal_point(char *buffer)
 {
     int n;
@@ -478,7 +480,7 @@ static void decimal_point(char *buffer)
     }
 
     if (*buffer) {
-        n = strnlen(buffer, 256);
+        n = strnlen1(buffer, 256);
         while (n > 0) {
             buffer[n + 1] = buffer[n];
             n--;
@@ -489,6 +491,7 @@ static void decimal_point(char *buffer)
         *buffer = '\0';
     }
 }
+#endif
 
 static void cropzeros(char *buffer)
 {
@@ -547,7 +550,7 @@ static char flt(output_gadget_t *output, double num, int size, int precision, ch
 #endif
     if (format == 'g' && !(flags & HEX_PREP)) cropzeros(tmp);
 
-    n = strnlen(tmp, 256);
+    n = strnlen1(tmp, 256);
 
     // Output number with alignment and padding
     size -= n;
@@ -693,11 +696,10 @@ repeat:
             s = va_arg(args, char *);
             if (!s) s = "<NULL>";
 #ifdef TINY_PRINTF
-            for (len = 0; *s; ++len, ++s)
-                ;
+            for (len = 0; *s; ++len, ++s){
+            }
 #else
-            for (len = 0; *s && len < precision; ++len, ++s)
-                ;
+            len = strnlen1(s, precision);
             if (!(flags & LEFT))
 #endif
             {
@@ -814,7 +816,7 @@ static int vsnprintf_impl(output_gadget_t *output, const char *format, va_list a
             output->buffer[null_char_pos] = '\0';
         }
     } else {
-        putchar_via_gadget(output, '\0');
+        output->function('\0', output->extra_function_arg);
     }
 
     // return written chars without terminating \0
@@ -883,5 +885,33 @@ int funcprintf(void (*func)(char c, void *extra_arg), void *extra_arg, const cha
     va_end(args);
     return ret;
 }
+
+#define RT_VSNPRINTF_FULL_REPLACING_VSNPRINTF
+#define RT_VSNPRINTF_FULL_REPLACING_VSPRINTF
+
+#ifdef RT_VSNPRINTF_FULL_REPLACING_VSNPRINTF
+int vsnprintf(char * s, size_t n, const char * format, va_list arg)
+{
+  return vsnprintf_(s, n, format, arg);
+}
+#endif
+
+#ifdef RT_VSNPRINTF_FULL_REPLACING_VSPRINTF
+int vsprintf(char * s, const char * format, va_list arg)
+{
+  return vsprintf_(s, format, arg);
+}
+#endif
+
+int snprintf(char *s, size_t n, const char *format, ...)
+{
+    int ret;
+    va_list args;
+    va_start(args, format);
+    ret = vsnprintf_(s, n, format, args);
+    va_end(args);
+    return ret;
+}
+
 
 #endif
