@@ -34,7 +34,7 @@
 
     20240411：
     不实用宏，使用弱函数的方式来决定是否使用无限长功能：
-        在该文件中定义一个 vfuncprintf 的弱函数。
+        在该文件中定义一个 vfctprintf 的弱函数。
         在未实现该函数的时候：
             保持现有功能不变的前提下，在elog_strstr中增加对是否实现该弱函数的功能判断(已完成)，并保持现有功能不变。
         在实现该函数后：
@@ -184,7 +184,7 @@ typedef struct {
     uint8_t output_is_locked_before_disable :1;
 } EasyLogger;
 
-/* output_arg for vfuncprintf */
+/* output_arg for vfctprintf */
 typedef struct {
     bool in_isr;
     char *buff;
@@ -253,7 +253,11 @@ static void putc_func(char c, void *extra_arg)
     }
 }
 
-__e_weak int vfuncprintf(void (*func)(char c, void *extra_arg), void *extra_arg, const char *format, va_list arg)
+void putchar_(char c)
+{
+}
+
+__e_weak int vfctprintf(void (*func)(char c, void *extra_arg), void *extra_arg, const char *format, va_list arg)
 {
     output_arg *buff_arg;
     if (!extra_arg)
@@ -509,8 +513,8 @@ ElogErrCode elog_init(void)
         return result;
     }
 
-    /* get the vfuncprintf state and initialize the output buff size */
-    if (-ELOG_EDENY == vfuncprintf(NULL, NULL, NULL, args)) {
+    /* get the vfctprintf state and initialize the output buff size */
+    if (-ELOG_EDENY == vfctprintf(NULL, NULL, NULL, args)) {
         elog.weak_vfuncprintf = 1;
     } else {
         elog.weak_vfuncprintf = 0;
@@ -669,7 +673,7 @@ void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...)
     raw_output_arg.buff_size = elog.output_buff_size;
     raw_output_arg.pos       = 0;
     raw_output_arg.in_isr    = in_isr;
-    fmt_result = vfuncprintf(putc_func, &raw_output_arg, format, args);
+    fmt_result = vfctprintf(putc_func, &raw_output_arg, format, args);
 
     /* output converted log */
     if ((fmt_result > -1) && (fmt_result <= elog.output_buff_size)) {
@@ -870,7 +874,7 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
     log_output_arg.buff_size = elog.output_buff_size - log_len;
     log_output_arg.pos       = 0;
     log_output_arg.in_isr    = in_isr;
-    fmt_result = vfuncprintf(putc_func, &log_output_arg, format, args);
+    fmt_result = vfctprintf(putc_func, &log_output_arg, format, args);
 
     va_end(args);
     /* calculate log length */

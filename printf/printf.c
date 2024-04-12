@@ -37,9 +37,6 @@
  * THE SOFTWARE.
  */
 
-// Define this globally (e.g. gcc -DPRINTF_INCLUDE_CONFIG_H=1 ...) to include the
-// printf_config.h header file
-
 #include "./printf.h"
 
 #ifdef __cplusplus
@@ -1320,29 +1317,29 @@ PRINTF_INLINE void format_string_loop(output_gadget_t *output, const char *forma
             }
             break;
         }
-#if PRINTF_SUPPORT_DECIMAL_SPECIFIERS
         case 'f':
         case 'F': {
+#if PRINTF_SUPPORT_DECIMAL_SPECIFIERS
             floating_point_t value = (floating_point_t)(flags & FLAGS_LONG_DOUBLE ? va_arg(args, long double) : va_arg(args, double));
             if (*format == 'F') flags |= FLAGS_UPPERCASE;
             print_floating_point(output, value, precision, width, flags, PRINTF_PREFER_DECIMAL);
+#endif
             format++;
             break;
         }
-#endif
-#if PRINTF_SUPPORT_EXPONENTIAL_SPECIFIERS
         case 'e':
         case 'E':
         case 'g':
         case 'G': {
+#if PRINTF_SUPPORT_EXPONENTIAL_SPECIFIERS
             floating_point_t value = (floating_point_t)(flags & FLAGS_LONG_DOUBLE ? va_arg(args, long double) : va_arg(args, double));
             if ((*format == 'g') || (*format == 'G')) flags |= FLAGS_ADAPT_EXP;
             if ((*format == 'E') || (*format == 'G')) flags |= FLAGS_UPPERCASE;
             print_floating_point(output, value, precision, width, flags, PRINTF_PREFER_EXPONENTIAL);
+#endif // PRINTF_SUPPORT_EXPONENTIAL_SPECIFIERS
             format++;
             break;
         }
-#endif // PRINTF_SUPPORT_EXPONENTIAL_SPECIFIERS
         case 'c': {
             printf_size_t l = 1U;
             // pre padding
@@ -1411,8 +1408,8 @@ PRINTF_INLINE void format_string_loop(output_gadget_t *output, const char *forma
             // Many people prefer to disable support for %n, as it lets the caller
             // engineer a write to an arbitrary location, of a value the caller
             // effectively controls - which could be a security concern in some cases.
-#if PRINTF_SUPPORT_WRITEBACK_SPECIFIER
         case 'n': {
+#if PRINTF_SUPPORT_WRITEBACK_SPECIFIER
             if (flags & FLAGS_CHAR)
                 *(va_arg(args, char *)) = (char)output->pos;
             else if (flags & FLAGS_SHORT)
@@ -1425,10 +1422,10 @@ PRINTF_INLINE void format_string_loop(output_gadget_t *output, const char *forma
 #endif // PRINTF_SUPPORT_LONG_LONG
             else
                 *(va_arg(args, int *)) = (int)output->pos;
+#endif // PRINTF_SUPPORT_WRITEBACK_SPECIFIER
             format++;
             break;
         }
-#endif // PRINTF_SUPPORT_WRITEBACK_SPECIFIER
 
         default:
             putchar_via_gadget(output, *format);
