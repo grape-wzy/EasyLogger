@@ -39,11 +39,7 @@
 #ifndef PRINTF_H_
 #define PRINTF_H_
 
-// Define this globally (e.g. gcc -DPRINTF_INCLUDE_CONFIG_H=1 ...) to include the
-// printf_config.h header file
-#if PRINTF_INCLUDE_CONFIG_H
-#include "printf_config.h"
-#endif
+#include "./printf_config.h"
 
 #ifdef __cplusplus
 # include <cstdarg>
@@ -77,6 +73,10 @@ ATTR_PRINTF((one_based_format_index), 0)
 #define PRINTF_ALIAS_STANDARD_FUNCTION_NAMES_HARD 0
 #endif
 
+#ifndef PRINTF_VISIBILITY
+#define PRINTF_VISIBILITY
+#endif
+
 #if PRINTF_ALIAS_STANDARD_FUNCTION_NAMES_HARD
 # define printf_    printf
 # define sprintf_   sprintf
@@ -84,14 +84,6 @@ ATTR_PRINTF((one_based_format_index), 0)
 # define snprintf_  snprintf
 # define vsnprintf_ vsnprintf
 # define vprintf_   vprintf
-#endif
-
-// If you want to include this implementation file directly rather than
-// link against it, this will let you control the functions' visibility,
-// e.g. make them static so as not to clash with other objects also
-// using them.
-#ifndef PRINTF_VISIBILITY
-#define PRINTF_VISIBILITY
 #endif
 
 /**
@@ -119,7 +111,6 @@ ATTR_PRINTF((one_based_format_index), 0)
 PRINTF_VISIBILITY
 void putchar_(char c);
 
-
 /**
  * An implementation of the C standard's printf/vprintf
  *
@@ -142,7 +133,6 @@ PRINTF_VISIBILITY
 int vprintf_(const char* format, va_list arg) ATTR_VPRINTF(1);
 ///@}
 
-
 /**
  * An implementation of the C standard's sprintf/vsprintf
  *
@@ -161,11 +151,10 @@ int vprintf_(const char* format, va_list arg) ATTR_VPRINTF(1);
  */
 ///@{
 PRINTF_VISIBILITY
-int  sprintf_(char* s, const char* format, ...) ATTR_PRINTF(2, 3);
+int sprintf_(char* s, const char* format, ...) ATTR_PRINTF(2, 3);
 PRINTF_VISIBILITY
 int vsprintf_(char* s, const char* format, va_list arg) ATTR_VPRINTF(2);
 ///@}
-
 
 /**
  * An implementation of the C standard's snprintf/vsnprintf
@@ -189,7 +178,7 @@ int vsprintf_(char* s, const char* format, va_list arg) ATTR_VPRINTF(2);
  */
 ///@{
 PRINTF_VISIBILITY
-int  snprintf_(char* s, size_t count, const char* format, ...) ATTR_PRINTF(3, 4);
+int snprintf_(char* s, size_t count, const char* format, ...) ATTR_PRINTF(3, 4);
 PRINTF_VISIBILITY
 int vsnprintf_(char* s, size_t count, const char* format, va_list arg) ATTR_VPRINTF(3);
 ///@}

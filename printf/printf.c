@@ -57,73 +57,8 @@
 # define vprintf_                                             vprintf
 #endif
 
-// 'ntoa' conversion buffer size, this must be big enough to hold one converted
-// numeric number including padded zeros (dynamically created on stack)
-#ifndef PRINTF_INTEGER_BUFFER_SIZE
-#define PRINTF_INTEGER_BUFFER_SIZE                            32
-#endif
-
-// size of the fixed (on-stack) buffer for printing individual decimal numbers.
-// this must be big enough to hold one converted floating-point value including
-// padded zeros.
-#ifndef PRINTF_DECIMAL_BUFFER_SIZE
-#define PRINTF_DECIMAL_BUFFER_SIZE                            32
-#endif
-
-// Support for the decimal notation floating point conversion specifiers (%f, %F)
-#ifndef PRINTF_SUPPORT_DECIMAL_SPECIFIERS
-#define PRINTF_SUPPORT_DECIMAL_SPECIFIERS                     1
-#endif
-
-// Support for the exponential notation floating point conversion specifiers (%e, %g, %E, %G)
-#ifndef PRINTF_SUPPORT_EXPONENTIAL_SPECIFIERS
-#define PRINTF_SUPPORT_EXPONENTIAL_SPECIFIERS                 1
-#endif
-
-// Support for the length write-back specifier (%n)
-#ifndef PRINTF_SUPPORT_WRITEBACK_SPECIFIER
-#define PRINTF_SUPPORT_WRITEBACK_SPECIFIER                    1
-#endif
-
-// Default precision for the floating point conversion specifiers (the C standard sets this at 6)
-#ifndef PRINTF_DEFAULT_FLOAT_PRECISION
-#define PRINTF_DEFAULT_FLOAT_PRECISION                        6
-#endif
-
-// Default choice of type to use for internal floating-point computations
-#ifndef PRINTF_USE_DOUBLE_INTERNALLY
-#define PRINTF_USE_DOUBLE_INTERNALLY                          1
-#endif
-
-// According to the C languages standard, printf() and related functions must be able to print any
-// integral number in floating-point notation, regardless of length, when using the %f specifier -
-// possibly hundreds of characters, potentially overflowing your buffers. In this implementation,
-// all values beyond this threshold are switched to exponential notation.
-#ifndef PRINTF_MAX_INTEGRAL_DIGITS_FOR_DECIMAL
-#define PRINTF_MAX_INTEGRAL_DIGITS_FOR_DECIMAL                9
-#endif
-
-// Support for the long long integral types (with the ll, z and t length modifiers for specifiers
-// %d,%i,%o,%x,%X,%u, and with the %p specifier).
-#ifndef PRINTF_SUPPORT_LONG_LONG
-#define PRINTF_SUPPORT_LONG_LONG                              1
-#endif
-
-// The number of terms in a Taylor series expansion of log_10(x) to
-// use for approximation - including the power-zero term (i.e. the
-// value at the point of expansion).
-#ifndef PRINTF_LOG10_TAYLOR_TERMS
-#define PRINTF_LOG10_TAYLOR_TERMS                             4
-#endif
-
 #if PRINTF_LOG10_TAYLOR_TERMS <= 1
 #error "At least one non-constant Taylor expansion is necessary for the log10() calculation"
-#endif
-
-// Be extra-safe, and don't assume format specifiers are completed correctly
-// before the format string end.
-#ifndef PRINTF_CHECK_FOR_NUL_IN_FORMAT_SPECIFIER
-#define PRINTF_CHECK_FOR_NUL_IN_FORMAT_SPECIFIER              1
 #endif
 
 #define PRINTF_PREFER_DECIMAL                                 false

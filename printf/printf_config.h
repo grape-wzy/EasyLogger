@@ -1,7 +1,6 @@
 #ifndef PRINTF_CONFIG_H_
 #define PRINTF_CONFIG_H_
 
-
 // 'ntoa' conversion buffer size, this must be big enough to hold one converted
 // numeric number including padded zeros (dynamically created on stack)
 #define PRINTF_INTEGER_BUFFER_SIZE                  32
@@ -45,6 +44,22 @@
 // before the format string end.
 #define PRINTF_CHECK_FOR_NUL_IN_FORMAT_SPECIFIER    0
 
+// After define this macro, the component willoverwrite the relevant functions(printf, sprintf, vsprintf, snprintf, 
+// vsnprintf, vprintf) in the standard library. But the prerequisite is that they must be weak functions, otherwise
+// the compiler will report many errors.
 #define PRINTF_ALIAS_STANDARD_FUNCTION_NAMES_HARD   1
+
+// After define this macro, the component replace all the relevant functions(printf, sprintf, vsprintf, snprintf, 
+// vsnprintf, vprintf) in files including the "printf.h" file. But the prerequisite is that the macro: 
+// "PRINTF_ALIAS_STANDARD_FUNCTION_NAMES_HARD" must be defined as "0".
+#define PRINTF_ALIAS_STANDARD_FUNCTION_NAMES_SOFT   0
+
+// If you want to include this implementation file directly rather than
+// link against it, this will let you control the functions' visibility,
+// e.g. make them static so as not to clash with other objects also
+// using them.
+#ifndef PRINTF_VISIBILITY
+#define PRINTF_VISIBILITY
+#endif
 
 #endif /* PRINTF_CONFIG_H_ */
