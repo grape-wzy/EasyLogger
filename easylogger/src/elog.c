@@ -112,7 +112,7 @@
 #define S_NORMAL                        "22m"
 /* output log default color definition: [front color] + [background color] + [show style] */
 #ifndef ELOG_COLOR_ASSERT
-#define ELOG_COLOR_ASSERT               (F_MAGENTA B_NULL S_NORMAL)
+#define ELOG_COLOR_ASSERT               (F_WHITE B_RED S_BLINK)
 #endif
 #ifndef ELOG_COLOR_ERROR
 #define ELOG_COLOR_ERROR                (F_RED B_NULL S_NORMAL)
@@ -222,9 +222,6 @@ static const char *color_output_info[] = {
 };
 #endif /* ELOG_COLOR_ENABLE */
 
-/* EasyLogger assert hook */
-void (*elog_assert_hook)(const char *expr, const char *func, size_t line);
-
 extern void elog_port_console_output(bool in_isr, const char *log, size_t size);
 extern void elog_port_backend_output(bool in_isr, uint32_t appender, uint8_t level,
                                      const char *time, size_t time_len,
@@ -254,6 +251,7 @@ static void putc_func(char c, void *extra_arg)
 
 void putchar_(char c)
 {
+    elog_raw_output(false, ELOG_APD_CONSOLE, "%s", c);
 }
 
 __e_weak int vfctprintf(void (*func)(char c, void *extra_arg), void *extra_arg, const char *format, va_list arg)
@@ -514,10 +512,27 @@ uint8_t elog_get_filter_tag_lvl(const char *tag)
 }
 #endif /* ELOG_FILTER_TAG_ENABLE */
 
+#if ELOG_ASSERT_ENABLE
+/* EasyLogger assert hook */
+static void (*elog_assert_hook)(const char *expr, const char *func, size_t line) = NULL;
+
 void elog_assert_set_hook(void (*hook)(const char *expr, const char *func, size_t line))
 {
     elog_assert_hook = hook;
 }
+
+void elog_assert_entry(const char *expr, const char *file, const char *func, const unsigned int line)
+{
+    elog_output(false, ELOG_APD_CONSOLE, ELOG_LVL_ASSERT,
+                "elog.assert", file, func, line,
+                 "(%s) Assert Failed!", expr);
+    if (elog_assert_hook) {
+        elog_assert_hook(expr, func, line);
+    }
+    for (;;) {}
+}
+
+#endif /* ELOG_ASSERT_ENABLE */
 
 ElogErrCode elog_init(void)
 {
@@ -672,6 +687,11 @@ void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...)
     char *log_buf = NULL;
     output_arg raw_output_arg;
 
+#if ELOG_USING_IN_ISR
+#else
+    if (in_isr) return;
+#endif
+
     /* check output appender */
     if (!elog.output_enabled || !appender) {
         return;
@@ -723,7 +743,7 @@ void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...)
 }
 
 void elog_output(bool in_isr, uint32_t appender, uint8_t level,
-                 const char *tag, const char *file, const char *func, const long line,
+                 const char *tag, const char *file, const char *func, const unsigned int line,
                  const char *format, ...)
 {
     extern const char *elog_port_get_time(void);
@@ -745,6 +765,11 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
 #endif
 
     ELOG_ASSERT(level <= ELOG_LVL_VERBOSE);
+
+#if ELOG_USING_IN_ISR
+#else
+    if (in_isr) return;
+#endif
 
     /* check output appender */
     if (!elog.output_enabled || !appender) {
@@ -974,6 +999,11 @@ void elog_hexdump(bool in_isr, uint32_t appender, const char *name, uint8_t widt
     uint16_t i = 0, j = 0, log_len = 0;
     const uint8_t *buf_p = buf;
     char *log_buf = NULL, dump_string[8] = { 0 };
+
+#if ELOG_USING_IN_ISR
+#else
+    if (in_isr) return;
+#endif
 
     /* check output appender */
     if (!elog.output_enabled || !appender) {

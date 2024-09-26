@@ -195,18 +195,14 @@ extern "C" {
 #endif
 
 /* EasyLogger assert for developer. */
-#if defined(ELOG_ASSERT_ENABLE) && (ELOG_ASSERT_ENABLE != 0)
-#define ELOG_ASSERT(EXPR)                                           \
-    if (!(EXPR)) {                                                  \
-        if (elog_assert_hook == NULL) {                             \
-            elog_assert(false, ELOG_APD_CONSOLE, "elog.assert",     \
-                        "(%s) has assert failed at %s:%ld.", #EXPR, \
-                        ELOG_FUNC_NAME, __LINE__);                  \
-            while (1) {}                                            \
-        } else {                                                    \
-            elog_assert_hook(#EXPR, ELOG_FUNC_NAME, __LINE__);      \
-        }                                                           \
-    }
+#if ELOG_ASSERT_ENABLE
+void elog_assert_entry(const char *expr, const char *file, const char *func, const unsigned int line);
+#define ELOG_ASSERT(EXPR)                                                       \
+    do{                                                                         \
+        if (!(EXPR)) {                                                          \
+            elog_assert_entry(#EXPR, ELOG_FILE_DIR, ELOG_FUNC_NAME, __LINE__);  \
+        }                                                                       \
+    } while(0)
 #else
 #define ELOG_ASSERT(EXPR)
 #endif
@@ -392,7 +388,7 @@ void elog_raw_output(bool in_isr, uint32_t appender, const char *format, ...);
  * @param ... args
  */
 void elog_output(bool in_isr, uint32_t appender, uint8_t level,
-                 const char *tag, const char *file, const char *func, const long line,
+                 const char *tag, const char *file, const char *func, const unsigned int line,
                  const char *format, ...);
 
 /**

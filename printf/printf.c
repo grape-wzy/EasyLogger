@@ -342,11 +342,6 @@ PRINTF_INLINE void append_termination_with_gadget(output_gadget_t *gadget)
 PRINTF_WEAK void putchar_(char c)
 {
     (void)c;
-#ifdef __GNUC__
-// accounting for a static analysis bug in GCC 6.x and earlier
-#pragma GCC diagnostic push
-#pragma "void putchar_(char c) is not be defined."
-#endif
 }
 
 // We can't use putchar_ as is, since our output gadget
