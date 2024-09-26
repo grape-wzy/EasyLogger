@@ -48,7 +48,6 @@
 #define LOG_TAG "elog"
 
 #include "../inc/elog.h"
-#include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -326,6 +325,26 @@ static size_t elog_strcpy(size_t cur_len, char *dst, const char *src)
     return src - src_old;
 }
 
+/**
+ * @brief another strncpy function, it will copy the '\0' to dest
+ *
+ * @return dest addr
+ */
+static char *elog_strncpy(char *dest, const char *src, int len)
+{
+    char *temp;
+    if (!dest || !src)
+        return (char *)0;
+
+    temp = src;
+    for (int i = 0; i <len; i++, temp++, src++) {
+        *temp = *src;
+        if (*src == '\0')
+            break;
+    }
+    return dest;
+}
+
 void elog_set_output_enabled(bool enabled)
 {
     ELOG_ASSERT((enabled == false) || (enabled == true));
@@ -453,7 +472,7 @@ ElogErrCode elog_set_filter_tag(const char *tag, uint8_t level)
         ret = ELOG_ENO_SPACE;
         for (i = 0; i < ELOG_FILTER_TAG_MAX_NUM; i++) {
             if (!elog.filter.tag_filters[i].enabled) {
-                strncpy(elog.filter.tag_filters[i].tag, tag, ELOG_FILTER_TAG_MAX_LEN);
+                elog_strncpy(elog.filter.tag_filters[i].tag, tag, ELOG_FILTER_TAG_MAX_LEN);
                 elog.filter.tag_filters[i].level = level;
                 elog.filter.tag_filters[i].enabled = true;
                 ret = ELOG_EOK;
@@ -538,7 +557,6 @@ ElogErrCode elog_init(void)
 #if ELOG_FILTER_TAG_ENABLE
     /* set tag_level to default val */
     for (i = 0; i < ELOG_FILTER_TAG_MAX_NUM; i++) {
-        memset(elog.filter.tag_filters[i].tag, '\0', ELOG_FILTER_TAG_MAX_LEN + 1);
         elog.filter.tag_filters[i].level = ELOG_FILTER_LVL_SILENT;
         elog.filter.tag_filters[i].enabled = false;
     }
@@ -616,7 +634,7 @@ void elog_stop(void)
 #endif
 
     /* show version */
-    LOG_I("EasyLogger V%s is deinitialize success.", ELOG_SW_VERSION);
+    LOG_D("EasyLogger V%s is deinitialize success.", ELOG_SW_VERSION);
 }
 
 static char *get_log_buff(bool in_isr)
@@ -712,7 +730,7 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
     extern const char *elog_port_get_p_info(void);
     extern const char *elog_port_get_t_info(void);
 
-    size_t newline_len = strlen(ELOG_NEWLINE_SIGN), level_format = elog.lvl_fmt[level], log_len = 0, time_len, fmt_info_len, raw_log_len;
+    size_t level_format = elog.lvl_fmt[level], log_len = 0, time_len, fmt_info_len, raw_log_len;
     char *log_buf = NULL, *time_addr = NULL, *fmt_info_addr = NULL, *raw_log_addr = NULL;
     int fmt_result;
     uint8_t tag_level = ELOG_LVL_VERBOSE;
@@ -886,20 +904,20 @@ void elog_output(bool in_isr, uint32_t appender, uint8_t level,
     }
     /* overflow check and reserve some space for CSI end sign and newline sign */
 #if ELOG_COLOR_ENABLE
-    if (log_len + (sizeof(CSI_END) - 1) + newline_len > elog.output_buff_size) {
+    if (log_len + (sizeof(CSI_END) - 1) + (sizeof(ELOG_NEWLINE_SIGN) - 1) > elog.output_buff_size) {
         /* using max length */
         log_len = elog.output_buff_size;
         /* reserve some space for CSI end sign */
         log_len -= (sizeof(CSI_END) - 1);
         /* reserve some space for newline sign */
-        log_len -= newline_len;
+        log_len -= (sizeof(ELOG_NEWLINE_SIGN) - 1);
     }
 #else
-    if (log_len + newline_len > elog.output_buff_size) {
+    if (log_len + (sizeof(ELOG_NEWLINE_SIGN) - 1) > elog.output_buff_size) {
         /* using max length */
         log_len = elog.output_buff_size;
         /* reserve some space for newline sign */
-        log_len -= newline_len;
+        log_len -= (sizeof(ELOG_NEWLINE_SIGN) - 1);
     }
 #endif /* ELOG_COLOR_ENABLE */
 
@@ -1022,8 +1040,8 @@ void elog_hexdump(bool in_isr, uint32_t appender, const char *name, uint8_t widt
 
 __do_log_out:
         /* overflow check and reserve some space for newline sign */
-        if (log_len + strlen(ELOG_NEWLINE_SIGN) > elog.output_buff_size) {
-            log_len = elog.output_buff_size - strlen(ELOG_NEWLINE_SIGN);
+        if (log_len + (sizeof(ELOG_NEWLINE_SIGN) - 1) > elog.output_buff_size) {
+            log_len = elog.output_buff_size - (sizeof(ELOG_NEWLINE_SIGN) - 1);
         }
         /* package newline sign */
         log_len += elog_strcpy(log_len, log_buf + log_len, ELOG_NEWLINE_SIGN);
